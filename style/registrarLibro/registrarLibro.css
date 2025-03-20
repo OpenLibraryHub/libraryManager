@@ -1,0 +1,76 @@
+#openModal {
+    padding: 10px 20px;
+    font-size: 16px;
+    cursor: pointer;
+}
+
+
+
+#modal {
+    border: none;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    padding: 20px;
+    max-width: 500px;
+    width: 100%;
+    text-align: center;
+    display: none; 
+
+}
+
+#modal[open] {
+    display: grid;
+    place-items: center;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+
+#modal::backdrop {
+    background-color: rgba(0, 0, 0, 0.5);
+}
+
+menu {
+    display: flex;
+    justify-content: center;
+    margin-top: 20px;
+}
+
+menu button {
+    padding: 10px 20px;
+    font-size: 16px;
+    cursor: pointer;
+}
+
+#dialogForm {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
+#menuModal { 
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}  
+
+#bookValueDiv { 
+    margin-bottom: 2rem;   
+}
+#closeModal { 
+    border: none;
+    border-radius: 10%;
+}
+
+.button-add-book { 
+    height: 44px;
+}
+
+#buttons-div {
+    display: flex;
+    flex-direction: row-reverse;
+    gap: 5rem;
+}
