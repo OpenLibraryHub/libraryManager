@@ -54,7 +54,9 @@
         <a href="back/salir.php" class="w-100 d-flex justify-content-center"><button type="submit" class="btn btn-success m-2">Cerrar sesion</button></a>
       </div>
       <div class="modal-footer">
-        <a href="usuarios.php"><button type="button" class="btn btn-dark">Cerrar</button></a>
+      <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true" class="btn btn-dark">Cerrar</span>
+        </button>
       </div>
     </div>
   </div>
@@ -149,7 +151,9 @@
       <div class="modal-footer justify-content-between">
         <button type="submit" class="btn btn-success">Registrar</button>
         </form>
-        <a href="usuarios.php"><button type="button" class="btn btn-dark">Cerrar</button></a>
+        <button type="button" class="close text-white " data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true" class="btn btn-dark">Cerrar</span>
+        </button>
       </div>
     </div>
   </div>
