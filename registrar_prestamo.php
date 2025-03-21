@@ -45,7 +45,7 @@ if(!isset($_SESSION['correo'])){
             header("Location: ../prestamos.php");
             exit();
         }
-        $query2 = $con->prepare("INSERT INTO prestamos (LibrosID, UsuariosID, Obervacion) VALUES (?, ?, ?)");
+        $query2 = $con->prepare("INSERT INTO prestamos (LibrosID, UsuariosID, Obervacion, fecha_limite ) VALUES (?, ?, ?, DATE_ADD(NOW(), INTERVAL 15 DAY) )");
         $query2->bind_param("iis",$libroID, $uId, $observaciones);
         $query2->execute();
         if ($query2->affected_rows > 0) {
