@@ -5,6 +5,7 @@ use App\Middleware\AuthMiddleware;
 use App\Helpers\Session;
 use App\Models\Book;
 use App\Models\Loan;
+use App\Models\Hold;
 
 AuthMiddleware::require();
 Session::start();
@@ -12,10 +13,12 @@ Session::start();
 $id = (int)($_GET['id'] ?? 0);
 $bookModel = new Book();
 $loanModel = new Loan();
+$holdModel = new Hold();
 $book = $bookModel->getBookWithDetails($id);
 if (!$book) { http_response_code(404); die('Libro no encontrado'); }
 
 $activeLoans = $loanModel->searchLoans($book['title'] ?? '', 'book', true);
+$queue = $holdModel->getQueueForBook((int)$book['id']);
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -74,6 +77,27 @@ $activeLoans = $loanModel->searchLoans($book['title'] ?? '', 'book', true);
           <?php endforeach; ?>
           <?php if (empty($activeLoans)): ?>
             <tr><td colspan="5" class="text-center text-muted">Sin préstamos activos</td></tr>
+          <?php endif; ?>
+        </tbody>
+      </table>
+    </div>
+  </div></div>
+
+  <div class="card mt-3"><div class="card-body">
+    <h5 class="card-title">Lista de espera</h5>
+    <div class="table-responsive">
+      <table class="table table-sm table-striped mb-0">
+        <thead class="thead-light"><tr><th>Usuario</th><th>Cédula</th><th>Fecha</th></tr></thead>
+        <tbody>
+          <?php foreach ($queue as $h): ?>
+            <tr>
+              <td><?= htmlspecialchars(($h['first_name'] ?? '') . ' ' . ($h['last_name'] ?? '')) ?></td>
+              <td><?= htmlspecialchars((string)$h['id_number']) ?></td>
+              <td><?= htmlspecialchars($h['created_at'] ?? '') ?></td>
+            </tr>
+          <?php endforeach; ?>
+          <?php if (empty($queue)): ?>
+            <tr><td colspan="3" class="text-center text-muted">Sin solicitudes</td></tr>
           <?php endif; ?>
         </tbody>
       </table>
