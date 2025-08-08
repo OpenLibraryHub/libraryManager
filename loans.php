@@ -101,11 +101,13 @@ $activeLoans = $q !== '' ? $loanModel->searchLoans($q, $field, $activeOnly) : ($
         <div class="form-row">
           <div class="form-group col-md-3">
             <label>Libro (ID o ISBN)</label>
-            <input required type="text" name="book_id" class="form-control" placeholder="ID interno o ISBN" />
+            <input required type="text" name="book_id" class="form-control" placeholder="ID interno o ISBN" list="books-ls" />
+            <datalist id="books-ls"></datalist>
           </div>
           <div class="form-group col-md-3">
             <label>Usuario (Cédula o Llave)</label>
-            <input required type="text" name="user_id" class="form-control" placeholder="Cédula o llave" />
+            <input required type="text" name="user_id" class="form-control" placeholder="Cédula o llave" list="users-ls" />
+            <datalist id="users-ls"></datalist>
           </div>
           <div class="form-group col-md-2">
             <label>Días</label>
@@ -215,5 +217,40 @@ $activeLoans = $q !== '' ? $loanModel->searchLoans($q, $field, $activeOnly) : ($
     </div>
   </div>
 </div>
+<script>
+async function fetchJSON(url) {
+  const res = await fetch(url, {credentials: 'same-origin'});
+  if (!res.ok) return {data: []};
+  return res.json();
+}
+document.addEventListener('input', async (e) => {
+  if (e.target.name === 'book_id') {
+    const q = e.target.value.trim();
+    if (q.length < 2) return;
+    const {data} = await fetchJSON('api/books_lookup.php?q=' + encodeURIComponent(q));
+    const dl = document.getElementById('books-ls');
+    dl.innerHTML = '';
+    data.forEach(b => {
+      const opt = document.createElement('option');
+      opt.value = b.isbn || String(b.id);
+      opt.label = `${b.title} - ${b.author} (${b.isbn || 'ID ' + b.id})`;
+      dl.appendChild(opt);
+    });
+  }
+  if (e.target.name === 'user_id') {
+    const q = e.target.value.trim();
+    if (q.length < 2) return;
+    const {data} = await fetchJSON('api/users_lookup.php?q=' + encodeURIComponent(q));
+    const dl = document.getElementById('users-ls');
+    dl.innerHTML = '';
+    data.forEach(u => {
+      const opt = document.createElement('option');
+      opt.value = u.user_key || String(u.id_number);
+      opt.label = `${u.first_name} ${u.last_name} (${u.id_number})`;
+      dl.appendChild(opt);
+    });
+  }
+});
+</script>
 </body>
 </html>
