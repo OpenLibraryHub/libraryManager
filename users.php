@@ -12,13 +12,17 @@ Session::start();
 $userModel = new User();
 $loanModel = new Loan();
 
-$users = $userModel->getAllOrdered('DESC');
+$q = trim((string)($_GET['q'] ?? ''));
+$field = $_GET['field'] ?? 'all';
+$order = $_GET['order'] ?? 'DESC';
+
+$users = $q !== '' ? $userModel->search($q, $field) : $userModel->getAllOrdered($order);
 
 // Index active loans by user
 $activeLoansByUser = [];
 $activeLoans = $loanModel->getActiveLoans();
 foreach ($activeLoans as $l) {
-    $uid = (int)$l['Cedula'];
+    $uid = (int)$l['id_number'];
     if (!isset($activeLoansByUser[$uid])) { $activeLoansByUser[$uid] = []; }
     $activeLoansByUser[$uid][] = $l;
 }
@@ -43,6 +47,40 @@ foreach ($activeLoans as $l) {
       <a href="returns.php" class="btn btn-secondary">Devoluciones</a>
     </div>
   </div>
+
+  <div class="card mb-3"><div class="card-body">
+    <h5 class="card-title">Buscar usuarios</h5>
+    <form method="get" class="form-inline">
+      <div class="form-row align-items-end w-100">
+        <div class="col-md-4 mb-2">
+          <label class="small text-muted d-block">Búsqueda</label>
+          <input class="form-control" type="text" name="q" value="<?= htmlspecialchars($q) ?>" placeholder="Nombre, apellido, correo, cédula, llave">
+        </div>
+        <div class="col-md-3 mb-2">
+          <label class="small text-muted d-block">Campo</label>
+          <select class="form-control" name="field">
+            <option value="all" <?= $field==='all'?'selected':'' ?>>Todos</option>
+            <option value="first_name" <?= $field==='first_name'?'selected':'' ?>>Nombre</option>
+            <option value="last_name" <?= $field==='last_name'?'selected':'' ?>>Apellido</option>
+            <option value="email" <?= $field==='email'?'selected':'' ?>>Correo</option>
+            <option value="id" <?= $field==='id'?'selected':'' ?>>Cédula</option>
+            <option value="key" <?= $field==='key'?'selected':'' ?>>Llave</option>
+          </select>
+        </div>
+        <div class="col-md-3 mb-2">
+          <label class="small text-muted d-block">Orden</label>
+          <select class="form-control" name="order">
+            <option value="DESC" <?= strtoupper($order)==='DESC'?'selected':'' ?>>Más recientes</option>
+            <option value="ASC" <?= strtoupper($order)==='ASC'?'selected':'' ?>>Más antiguos</option>
+          </select>
+        </div>
+        <div class="col-md-2 mb-2">
+          <button class="btn btn-outline-primary mr-2" type="submit">Aplicar</button>
+          <a class="btn btn-outline-secondary" href="users.php">Limpiar</a>
+        </div>
+      </div>
+    </form>
+  </div></div>
 
   <div class="card">
     <div class="table-responsive">
@@ -71,7 +109,7 @@ foreach ($activeLoans as $l) {
                 <?php 
                   $minDays = null;
                   foreach ($loans as $l) {
-                    $days = (int)floor((strtotime($l['fecha_limite']) - time())/86400);
+                    $days = (int)floor((strtotime($l['due_at']) - time())/86400);
                     $minDays = $minDays === null ? $days : min($minDays, $days);
                   }
                   echo htmlspecialchars((string)$minDays);

@@ -40,13 +40,13 @@ class UserController {
     /**
      * Get single user
      */
-    public function show($cedula): array {
+    public function show($idNumber): array {
         // Check authentication
         if (!AuthMiddleware::check(false)) {
             return ['error' => 'No autorizado', 'user' => null];
         }
         
-        $user = $this->userModel->find($cedula);
+        $user = $this->userModel->find($idNumber);
         
         if (!$user) {
             return ['error' => 'Usuario no encontrado', 'user' => null];
@@ -54,7 +54,7 @@ class UserController {
         
         // Get user's active loans
         $loanModel = new \App\Models\Loan();
-        $user['active_loans'] = $loanModel->getUserActiveLoans($cedula);
+        $user['active_loans'] = $loanModel->getUserActiveLoans($idNumber);
         
         return ['user' => $user];
     }
@@ -81,21 +81,21 @@ class UserController {
         
         // Sanitize input
         $sanitized = Validator::sanitizeArray($data, [
-            'UsuariosID' => 'int',
-            'Nombre' => 'string',
-            'Apellido' => 'string',
-            'Correo' => 'email',
-            'Cedula' => 'int',
-            'numero' => 'int',
-            'direccion' => 'string'
+            'user_key' => 'int',
+            'first_name' => 'string',
+            'last_name' => 'string',
+            'email' => 'email',
+            'id_number' => 'int',
+            'phone' => 'int',
+            'address' => 'string'
         ]);
         
         // Check if user already exists
         if ($this->userModel->userExists(
-            $sanitized['Correo'],
-            $sanitized['Cedula'],
-            $sanitized['UsuariosID'],
-            $sanitized['numero'] ?? null
+            $sanitized['email'],
+            $sanitized['id_number'],
+            $sanitized['user_key'],
+            $sanitized['phone'] ?? null
         )) {
             $response['message'] = 'El usuario ya existe (correo, cédula, llave o teléfono duplicado).';
             return $response;
@@ -107,8 +107,8 @@ class UserController {
             
             if ($newUser) {
                 AuthMiddleware::logActivity('user_create', [
-                    'cedula' => $sanitized['Cedula'],
-                    'email' => $sanitized['Correo']
+                    'cedula' => $sanitized['id_number'],
+                    'email' => $sanitized['email']
                 ]);
                 
                 $response['success'] = true;
@@ -128,7 +128,7 @@ class UserController {
     /**
      * Update user
      */
-    public function update($cedula, array $data): array {
+    public function update($idNumber, array $data): array {
         $response = ['success' => false, 'message' => '', 'errors' => []];
         
         // Check authentication
@@ -138,7 +138,7 @@ class UserController {
         }
         
         // Check if user exists
-        if (!$this->userModel->find($cedula)) {
+        if (!$this->userModel->find($idNumber)) {
             $response['message'] = 'Usuario no encontrado.';
             return $response;
         }
@@ -153,18 +153,18 @@ class UserController {
         
         // Sanitize input
         $sanitized = Validator::sanitizeArray($data, [
-            'UsuariosID' => 'int',
-            'Nombre' => 'string',
-            'Apellido' => 'string',
-            'Correo' => 'email',
-            'numero' => 'int',
-            'direccion' => 'string'
+            'user_key' => 'int',
+            'first_name' => 'string',
+            'last_name' => 'string',
+            'email' => 'email',
+            'phone' => 'int',
+            'address' => 'string'
         ]);
         
         // If changing cedula, check if new cedula is available
-        if (isset($sanitized['Cedula']) && $sanitized['Cedula'] != $cedula) {
-            if ($this->userModel->userExists('', $sanitized['Cedula'], '', null)) {
-                $response['errors']['Cedula'] = ['Esta cédula ya está en uso.'];
+        if (isset($sanitized['id_number']) && $sanitized['id_number'] != $idNumber) {
+            if ($this->userModel->userExists('', $sanitized['id_number'], '', null)) {
+                $response['errors']['id_number'] = ['Esta cédula ya está en uso.'];
                 $response['message'] = 'La cédula ya está registrada.';
                 return $response;
             }
@@ -172,8 +172,8 @@ class UserController {
         
         try {
             // Update user
-            if ($this->userModel->updateUser($cedula, $sanitized)) {
-                AuthMiddleware::logActivity('user_update', ['cedula' => $cedula]);
+            if ($this->userModel->updateUser($idNumber, $sanitized)) {
+                AuthMiddleware::logActivity('user_update', ['cedula' => $idNumber]);
                 
                 $response['success'] = true;
                 $response['message'] = 'Usuario actualizado exitosamente.';
@@ -191,7 +191,7 @@ class UserController {
     /**
      * Delete user
      */
-    public function delete($cedula): array {
+    public function delete($idNumber): array {
         $response = ['success' => false, 'message' => ''];
         
         // Check authentication
@@ -202,7 +202,7 @@ class UserController {
         
         // Check if user has active loans
         $loanModel = new \App\Models\Loan();
-        $activeLoans = $loanModel->getUserActiveLoans($cedula);
+        $activeLoans = $loanModel->getUserActiveLoans($idNumber);
         
         if (!empty($activeLoans)) {
             $response['message'] = 'No se puede eliminar el usuario porque tiene préstamos activos.';
@@ -210,8 +210,8 @@ class UserController {
         }
         
         try {
-            if ($this->userModel->delete($cedula)) {
-                AuthMiddleware::logActivity('user_delete', ['cedula' => $cedula]);
+            if ($this->userModel->delete($idNumber)) {
+                AuthMiddleware::logActivity('user_delete', ['cedula' => $idNumber]);
                 
                 $response['success'] = true;
                 $response['message'] = 'Usuario eliminado exitosamente.';
@@ -229,7 +229,7 @@ class UserController {
     /**
      * Sanction user
      */
-    public function sanction($cedula): array {
+    public function sanction($idNumber): array {
         $response = ['success' => false, 'message' => ''];
         
         // Check authentication
@@ -239,8 +239,8 @@ class UserController {
         }
         
         try {
-            if ($this->userModel->sanction($cedula)) {
-                AuthMiddleware::logActivity('user_sanction', ['cedula' => $cedula]);
+            if ($this->userModel->sanction($idNumber)) {
+                AuthMiddleware::logActivity('user_sanction', ['cedula' => $idNumber]);
                 
                 $response['success'] = true;
                 $response['message'] = 'Usuario sancionado exitosamente.';
@@ -258,7 +258,7 @@ class UserController {
     /**
      * Remove user sanction
      */
-    public function removeSanction($cedula): array {
+    public function removeSanction($idNumber): array {
         $response = ['success' => false, 'message' => ''];
         
         // Check authentication
@@ -268,8 +268,8 @@ class UserController {
         }
         
         try {
-            if ($this->userModel->removeSanction($cedula)) {
-                AuthMiddleware::logActivity('user_sanction_remove', ['cedula' => $cedula]);
+            if ($this->userModel->removeSanction($idNumber)) {
+                AuthMiddleware::logActivity('user_sanction_remove', ['cedula' => $idNumber]);
                 
                 $response['success'] = true;
                 $response['message'] = 'Sanción removida exitosamente.';

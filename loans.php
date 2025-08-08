@@ -25,6 +25,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'creat
         $days = max(1, (int)($_POST['days'] ?? 15));
         $obs = trim((string)($_POST['observation'] ?? ''));
         try {
+            // Allow non-numeric identifiers
+            if ($bookId === 0 && isset($_POST['book_id'])) {
+                $bookIdentifier = trim((string)$_POST['book_id']);
+                if ($bookIdentifier !== '' && !ctype_digit($bookIdentifier)) {
+                    $book = (new \App\Models\Book())->findByISBN($bookIdentifier);
+                    if ($book) { $bookId = (int)$book['id']; }
+                }
+            }
+            if ($userId === 0 && isset($_POST['user_id'])) {
+                $userIdentifier = trim((string)$_POST['user_id']);
+                if ($userIdentifier !== '' && !ctype_digit($userIdentifier)) {
+                    $user = (new \App\Models\User())->findByIdentifier($userIdentifier);
+                    if ($user) { $userId = (int)$user['id_number']; }
+                }
+            }
             if ($loanModel->createLoan($bookId, $userId, $obs, $days)) {
                 $success = true;
                 $message = 'Préstamo creado.';
@@ -85,12 +100,12 @@ $activeLoans = $q !== '' ? $loanModel->searchLoans($q, $field, $activeOnly) : ($
         <input type="hidden" name="action" value="create" />
         <div class="form-row">
           <div class="form-group col-md-3">
-            <label>ID Libro (interno)</label>
-            <input required type="number" name="book_id" class="form-control" />
+            <label>Libro (ID o ISBN)</label>
+            <input required type="text" name="book_id" class="form-control" placeholder="ID interno o ISBN" />
           </div>
           <div class="form-group col-md-3">
-            <label>Cédula Usuario</label>
-            <input required type="number" name="user_id" class="form-control" />
+            <label>Usuario (Cédula o Llave)</label>
+            <input required type="text" name="user_id" class="form-control" placeholder="Cédula o llave" />
           </div>
           <div class="form-group col-md-2">
             <label>Días</label>

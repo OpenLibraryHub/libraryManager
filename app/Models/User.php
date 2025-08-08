@@ -27,7 +27,7 @@ class User extends Model {
     ];
     
     /**
-     * Find user by cedula or llave
+     * Find user by id number or key
      */
     public function findByIdentifier($identifier) {
         $sql = "SELECT * FROM {$this->table} 
@@ -41,25 +41,25 @@ class User extends Model {
     }
     
     /**
-     * Search users
+     * Search users (field values: all, id, first_name, last_name, email, key)
      */
     public function search(string $query, string $field = 'all'): array {
         $query = '%' . $this->db->escape($query) . '%';
         
         switch ($field) {
-            case 'cedula':
+            case 'id':
                 $sql = "SELECT * FROM {$this->table} WHERE id_number LIKE ?";
                 break;
-            case 'nombre':
+            case 'first_name':
                 $sql = "SELECT * FROM {$this->table} WHERE first_name LIKE ?";
                 break;
-            case 'apellido':
+            case 'last_name':
                 $sql = "SELECT * FROM {$this->table} WHERE last_name LIKE ?";
                 break;
-            case 'correo':
+            case 'email':
                 $sql = "SELECT * FROM {$this->table} WHERE email LIKE ?";
                 break;
-            case 'llave':
+            case 'key':
                 $sql = "SELECT * FROM {$this->table} WHERE user_key LIKE ?";
                 break;
             default:
@@ -85,13 +85,13 @@ class User extends Model {
     }
     
     /**
-     * Check if user exists by email, cedula, or llave
+     * Check if user exists by email, id_number, or user_key
      */
-    public function userExists($email, $cedula, $llave, $phone = null): bool {
+    public function userExists($email, $idNumber, $userKey, $phone = null): bool {
         $sql = "SELECT 1 FROM {$this->table} 
                 WHERE email = ? OR id_number = ? OR user_key = ?";
         
-        $params = [$email, $cedula, $llave];
+        $params = [$email, $idNumber, $userKey];
         $types = 'sii';
         
         if ($phone !== null) {
@@ -109,33 +109,33 @@ class User extends Model {
     /**
      * Check if user is sanctioned
      */
-    public function isSanctioned($cedula): bool {
+    public function isSanctioned($idNumber): bool {
         $sql = "SELECT sanctioned FROM {$this->table} WHERE id_number = ? LIMIT 1";
-        $result = $this->db->queryOne($sql, 'i', [$cedula]);
+        $result = $this->db->queryOne($sql, 'i', [$idNumber]);
         return $result && (int)$result['sanctioned'] === 1;
     }
     
     /**
      * Sanction user
      */
-    public function sanction($cedula): bool {
+    public function sanction($idNumber): bool {
         $sql = "UPDATE {$this->table} 
                 SET sanctioned = 1, sanctioned_at = NOW() 
                 WHERE id_number = ?";
         
-        $result = $this->db->query($sql, 'i', [$cedula]);
+        $result = $this->db->query($sql, 'i', [$idNumber]);
         return $result !== false && $this->db->affectedRows() > 0;
     }
     
     /**
      * Remove sanction
      */
-    public function removeSanction($cedula): bool {
+    public function removeSanction($idNumber): bool {
         $sql = "UPDATE {$this->table} 
                 SET sanctioned = 0, sanctioned_at = NULL 
                 WHERE id_number = ?";
         
-        $result = $this->db->query($sql, 'i', [$cedula]);
+        $result = $this->db->query($sql, 'i', [$idNumber]);
         return $result !== false && $this->db->affectedRows() > 0;
     }
     
@@ -156,12 +156,12 @@ class User extends Model {
      * Create new user with validation
      */
     public function createUser(array $data) {
-        // Set current datetime for Fecha field
-        $data['Fecha'] = date('Y-m-d H:i:s');
-        
-        // Ensure sancionado is set to 0 by default
-        if (!isset($data['sancionado'])) {
-            $data['sancionado'] = 0;
+        // Ensure defaults
+        if (!isset($data['sanctioned'])) {
+            $data['sanctioned'] = 0;
+        }
+        if (!isset($data['created_at'])) {
+            $data['created_at'] = date('Y-m-d H:i:s');
         }
         
         return $this->create($data);
@@ -170,12 +170,10 @@ class User extends Model {
     /**
      * Update user with validation
      */
-    public function updateUser($cedula, array $data): bool {
-        // Remove cedula from data if present (it's the primary key)
-        unset($data['Cedula']);
-        
-        // Use the cedula as ID for update
-        return $this->update($cedula, $data);
+    public function updateUser($idNumber, array $data): bool {
+        // Never allow changing the primary key via payload
+        unset($data['id_number']);
+        return $this->update($idNumber, $data);
     }
     
     /**
@@ -217,16 +215,16 @@ class User extends Model {
         $validator = new Validator();
         
         $rules = [
-            'Nombre' => 'required|min:2|max:100',
-            'Apellido' => 'required|min:2|max:100',
-            'Correo' => 'required|email|max:255',
-            'direccion' => 'max:100',
+            'first_name' => 'required|min:2|max:100',
+            'last_name' => 'required|min:2|max:100',
+            'email' => 'required|email|max:255',
+            'address' => 'max:100',
         ];
         
         if (!$isUpdate) {
-            $rules['Cedula'] = 'required|numeric|min:1';
-            $rules['UsuariosID'] = 'required|numeric|min:1';
-            $rules['numero'] = 'numeric';
+            $rules['id_number'] = 'required|numeric|min:1';
+            $rules['user_key'] = 'required|numeric|min:1';
+            $rules['phone'] = 'numeric';
         }
         
         $validator->validate($data, $rules);

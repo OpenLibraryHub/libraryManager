@@ -322,6 +322,15 @@ class Loan extends Model {
         $result = $this->db->queryOne($sql, 'ii', [$userId, $bookId]);
         return $result !== null;
     }
+
+    /**
+     * Count active loans for a specific book
+     */
+    public function countActiveLoansByBook(int $bookId): int {
+        $sql = "SELECT COUNT(*) as cnt FROM {$this->table} WHERE book_id = ? AND returned = 0";
+        $row = $this->db->queryOne($sql, 'i', [$bookId]);
+        return $row ? (int)$row['cnt'] : 0;
+    }
     
     /**
      * Get loan statistics

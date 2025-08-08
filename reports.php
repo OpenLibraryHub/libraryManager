@@ -5,6 +5,7 @@ use App\Middleware\AuthMiddleware;
 use App\Helpers\Session;
 use App\Models\Loan;
 use App\Models\Book;
+use App\Models\User;
 
 AuthMiddleware::require();
 Session::start();
@@ -12,13 +13,23 @@ Session::start();
 $loanModel = new Loan();
 $bookModel = new Book();
 
-$doExport = isset($_GET['export']) && $_GET['export'] === 'loans';
-if ($doExport) {
-  // CSV export of loans
-  $rows = $loanModel->exportLoansData();
+$export = $_GET['export'] ?? '';
+if ($export) {
+  $filename = $export . '_export_' . date('Ymd_His') . '.csv';
   header('Content-Type: text/csv; charset=utf-8');
-  header('Content-Disposition: attachment; filename=loans_export_' . date('Ymd_His') . '.csv');
+  header('Content-Disposition: attachment; filename=' . $filename);
   $out = fopen('php://output', 'w');
+  $rows = [];
+  if ($export === 'loans') {
+    $rows = $loanModel->exportLoansData();
+  } elseif ($export === 'overdue') {
+    $rows = $loanModel->getOverdueLoans();
+  } elseif ($export === 'users') {
+    $userModel = new User();
+    $rows = $userModel->all();
+  } elseif ($export === 'books') {
+    $rows = $bookModel->all();
+  }
   if (!empty($rows)) {
     fputcsv($out, array_keys($rows[0]));
     foreach ($rows as $r) { fputcsv($out, $r); }
@@ -49,6 +60,9 @@ $bookStats = $bookModel->getStatistics();
       <a href="loans.php" class="btn btn-primary">Préstamos</a>
       <a href="returns.php" class="btn btn-secondary">Devoluciones</a>
       <a href="reports.php?export=loans" class="btn btn-success ml-2">Exportar préstamos (CSV)</a>
+      <a href="reports.php?export=overdue" class="btn btn-warning ml-2">Exportar vencidos (CSV)</a>
+      <a href="reports.php?export=users" class="btn btn-outline-primary ml-2">Exportar usuarios (CSV)</a>
+      <a href="reports.php?export=books" class="btn btn-outline-secondary ml-2">Exportar libros (CSV)</a>
     </div>
   </div>
 

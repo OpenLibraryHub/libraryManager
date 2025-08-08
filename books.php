@@ -91,6 +91,7 @@ if ($q !== '') {
             <th>Clasificación</th>
             <th>Disponibles</th>
             <th>Sala</th>
+            <th></th>
           </tr>
         </thead>
         <tbody>
@@ -103,6 +104,10 @@ if ($q !== '') {
             <td><?= htmlspecialchars($b['classification'] ?? '') ?></td>
             <td><?= (int)($b['copies_available'] ?? 0) ?> / <?= (int)($b['copies_total'] ?? 0) ?></td>
             <td><?= htmlspecialchars($b['room'] ?? '') ?></td>
+            <td class="text-nowrap">
+              <a class="btn btn-sm btn-outline-primary" href="books_edit.php?id=<?= (int)$b['id'] ?>">Editar</a>
+              <a class="btn btn-sm btn-outline-danger" href="books_delete.php?id=<?= (int)$b['id'] ?>">Eliminar</a>
+            </td>
           </tr>
         <?php endforeach; ?>
         <?php if (empty($books)): ?>

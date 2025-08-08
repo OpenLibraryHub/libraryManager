@@ -204,7 +204,19 @@ class Book extends Model {
         $sql = "SELECT copies_available FROM {$this->table} WHERE id = ? LIMIT 1";
         $result = $this->db->queryOne($sql, 'i', [$id]);
         
-        return $result && $result['copies_available'] > 0;
+        return $result && (int)$result['copies_available'] > 0;
+    }
+
+    /**
+     * Update core book fields (admin)
+     */
+    public function updateBook(int $id, array $data): bool {
+        $payload = array_intersect_key($data, array_flip([
+            'isbn', 'title', 'author', 'classification_id', 'classification_code',
+            'origin_id', 'label_id', 'room_id', 'notes'
+        ]));
+        if (empty($payload)) { return false; }
+        return $this->update($id, $payload);
     }
     
     /**
