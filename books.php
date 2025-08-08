@@ -99,7 +99,7 @@ if ($q !== '') {
           <tr>
             <td><?= (int)$b['id'] ?></td>
             <td><?= htmlspecialchars((string)($b['isbn'] ?? '')) ?></td>
-            <td><?= htmlspecialchars($b['title'] ?? '') ?></td>
+            <td><a href="books_detail.php?id=<?= (int)$b['id'] ?>"><?= htmlspecialchars($b['title'] ?? '') ?></a></td>
             <td><?= htmlspecialchars($b['author'] ?? '') ?></td>
             <td><?= htmlspecialchars($b['classification'] ?? '') ?></td>
             <td><?= (int)($b['copies_available'] ?? 0) ?> / <?= (int)($b['copies_total'] ?? 0) ?></td>

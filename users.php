@@ -15,8 +15,21 @@ $loanModel = new Loan();
 $q = trim((string)($_GET['q'] ?? ''));
 $field = $_GET['field'] ?? 'all';
 $order = $_GET['order'] ?? 'DESC';
+$sortBy = $_GET['sort'] ?? 'created_at';
+$page = max(1, (int)($_GET['page'] ?? 1));
+$perPage = 10;
+$offset = ($page - 1) * $perPage;
 
-$users = $q !== '' ? $userModel->search($q, $field) : $userModel->getAllOrdered($order);
+if ($q !== '') {
+  $all = $userModel->search($q, $field);
+  $total = count($all);
+  $users = array_slice($all, $offset, $perPage);
+} else {
+  // Quick count
+  $total = $userModel->count();
+  $users = $userModel->getPageOrdered($perPage, $offset, $order, $sortBy);
+}
+$pages = max(1, (int)ceil($total / $perPage));
 
 // Index active loans by user
 $activeLoansByUser = [];
@@ -75,6 +88,17 @@ foreach ($activeLoans as $l) {
           </select>
         </div>
         <div class="col-md-2 mb-2">
+          <label class="small text-muted d-block">Ordenar por</label>
+          <select class="form-control" name="sort">
+            <option value="created_at" <?= $sortBy==='created_at'?'selected':'' ?>>Fecha</option>
+            <option value="first_name" <?= $sortBy==='first_name'?'selected':'' ?>>Nombre</option>
+            <option value="last_name" <?= $sortBy==='last_name'?'selected':'' ?>>Apellido</option>
+            <option value="email" <?= $sortBy==='email'?'selected':'' ?>>Correo</option>
+            <option value="id_number" <?= $sortBy==='id_number'?'selected':'' ?>>Cédula</option>
+            <option value="user_key" <?= $sortBy==='user_key'?'selected':'' ?>>Llave</option>
+          </select>
+        </div>
+        <div class="col-md-2 mb-2">
           <button class="btn btn-outline-primary mr-2" type="submit">Aplicar</button>
           <a class="btn btn-outline-secondary" href="users.php">Limpiar</a>
         </div>
@@ -122,6 +146,21 @@ foreach ($activeLoans as $l) {
       </table>
     </div>
   </div>
+  <nav aria-label="Paginación" class="mt-3">
+    <ul class="pagination">
+      <li class="page-item <?= $page <= 1 ? 'disabled' : '' ?>">
+        <a class="page-link" href="?page=<?= $page-1 ?>&q=<?= urlencode($q) ?>&field=<?= htmlspecialchars($field) ?>&order=<?= htmlspecialchars($order) ?>&sort=<?= htmlspecialchars($sortBy) ?>">Anterior</a>
+      </li>
+      <?php for ($p = max(1,$page-2); $p <= min($pages, $page+2); $p++): ?>
+        <li class="page-item <?= $p === $page ? 'active' : '' ?>">
+          <a class="page-link" href="?page=<?= $p ?>&q=<?= urlencode($q) ?>&field=<?= htmlspecialchars($field) ?>&order=<?= htmlspecialchars($order) ?>&sort=<?= htmlspecialchars($sortBy) ?>"><?= $p ?></a>
+        </li>
+      <?php endfor; ?>
+      <li class="page-item <?= $page >= $pages ? 'disabled' : '' ?>">
+        <a class="page-link" href="?page=<?= $page+1 ?>&q=<?= urlencode($q) ?>&field=<?= htmlspecialchars($field) ?>&order=<?= htmlspecialchars($order) ?>&sort=<?= htmlspecialchars($sortBy) ?>">Siguiente</a>
+      </li>
+    </ul>
+  </nav>
 </div>
 </body>
 </html>

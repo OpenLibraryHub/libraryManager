@@ -83,6 +83,17 @@ class User extends Model {
         $sql = "SELECT * FROM {$this->table} ORDER BY created_at {$order}";
         return $this->db->query($sql) ?: [];
     }
+
+    /**
+     * Get a page of users with ordering
+     */
+    public function getPageOrdered(int $limit, int $offset, string $order = 'DESC', string $sortBy = 'created_at'): array {
+        $order = in_array(strtoupper($order), ['ASC', 'DESC']) ? strtoupper($order) : 'DESC';
+        $allowed = ['created_at','first_name','last_name','email','id_number','user_key'];
+        $sortBy = in_array($sortBy, $allowed, true) ? $sortBy : 'created_at';
+        $sql = "SELECT * FROM {$this->table} ORDER BY {$sortBy} {$order} LIMIT ? OFFSET ?";
+        return $this->db->query($sql, 'ii', [$limit, $offset]) ?: [];
+    }
     
     /**
      * Check if user exists by email, id_number, or user_key
