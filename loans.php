@@ -12,6 +12,9 @@ $loanModel = new Loan();
 $message = '';
 $success = false;
 $errors = [];
+$q = trim((string)($_GET['q'] ?? ''));
+$field = $_GET['field'] ?? 'all';
+$activeOnly = ($_GET['active'] ?? '1') === '1';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'create') {
     if (!Session::verifyCsrfToken($_POST['csrf_token'] ?? '')) {
@@ -34,7 +37,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'creat
     }
 }
 
-$activeLoans = $loanModel->getActiveLoans();
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'extend') {
+    if (!Session::verifyCsrfToken($_POST['csrf_token'] ?? '')) {
+        $message = 'Token inválido';
+    } else {
+        $loanId = (int)($_POST['loan_id'] ?? 0);
+        $days = max(1, (int)($_POST['days'] ?? 5));
+        if ($loanModel->extendLoan($loanId, $days)) {
+            $success = true;
+            $message = 'Préstamo extendido.';
+        } else {
+            $message = 'No se pudo extender (verifique que no esté vencido o devuelto).';
+        }
+    }
+}
+
+$activeLoans = $q !== '' ? $loanModel->searchLoans($q, $field, $activeOnly) : ($activeOnly ? $loanModel->getActiveLoans() : $loanModel->getReturnedLoans());
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -88,14 +106,49 @@ $activeLoans = $loanModel->getActiveLoans();
     </div>
   </div>
 
+  <div class="card mb-4">
+    <div class="card-body">
+      <h5 class="card-title">Buscar préstamos</h5>
+      <form method="get" class="form-inline">
+        <div class="form-row align-items-end w-100">
+          <div class="col-md-4 mb-2">
+            <label class="small text-muted d-block">Búsqueda</label>
+            <input class="form-control" type="text" name="q" value="<?= htmlspecialchars($q) ?>" placeholder="Libro, usuario o cédula">
+          </div>
+          <div class="col-md-3 mb-2">
+            <label class="small text-muted d-block">Campo</label>
+            <select class="form-control" name="field">
+              <option value="all" <?= $field==='all'?'selected':'' ?>>Todos</option>
+              <option value="book" <?= $field==='book'?'selected':'' ?>>Libro</option>
+              <option value="user" <?= $field==='user'?'selected':'' ?>>Usuario</option>
+              <option value="id" <?= $field==='id'?'selected':'' ?>>Cédula</option>
+              <option value="key" <?= $field==='key'?'selected':'' ?>>Llave</option>
+            </select>
+          </div>
+          <div class="col-md-3 mb-2">
+            <label class="small text-muted d-block">Estado</label>
+            <select class="form-control" name="active">
+              <option value="1" <?= $activeOnly?'selected':'' ?>>Activos</option>
+              <option value="0" <?= !$activeOnly?'selected':'' ?>>Devueltos</option>
+            </select>
+          </div>
+          <div class="col-md-2 mb-2">
+            <button class="btn btn-outline-primary mr-2" type="submit">Aplicar</button>
+            <a class="btn btn-outline-secondary" href="loans.php">Limpiar</a>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <div class="card">
     <div class="card-body">
-      <h5 class="card-title">Préstamos activos</h5>
+      <h5 class="card-title"><?= $activeOnly ? 'Préstamos activos' : 'Préstamos devueltos' ?></h5>
       <div class="table-responsive">
         <table class="table table-striped">
           <thead class="thead-light">
             <tr>
-              <th>ID</th><th>Libro</th><th>Autor</th><th>Usuario</th><th>Cédula</th><th>Fecha préstamo</th><th>Fecha límite</th>
+              <th>ID</th><th>Libro</th><th>Autor</th><th>Usuario</th><th>Cédula</th><th>Fecha préstamo</th><th>Fecha límite</th><?php if(!$activeOnly): ?><th>Fecha entregado</th><?php endif; ?><?php if($activeOnly): ?><th>Estado</th><th>Acciones</th><?php endif; ?>
             </tr>
           </thead>
           <tbody>
@@ -108,10 +161,37 @@ $activeLoans = $loanModel->getActiveLoans();
               <td><?= htmlspecialchars((string)$l['Cedula']) ?></td>
               <td><?= htmlspecialchars($l['fecha_prestamo']) ?></td>
               <td><?= htmlspecialchars($l['fecha_limite']) ?></td>
+              <?php if(!$activeOnly): ?><td><?= htmlspecialchars($l['fecha_entregado'] ?? '') ?></td><?php endif; ?>
+              <?php if($activeOnly): ?>
+                <td>
+                  <?php 
+                    $isOverdue = isset($l['fecha_limite']) && strtotime($l['fecha_limite']) < time();
+                    if ($isOverdue):
+                      $daysOver = (int)floor((time() - strtotime($l['fecha_limite']))/86400);
+                  ?>
+                      <span class="badge badge-danger">Vencido <?= $daysOver ?> d</span>
+                  <?php else: ?>
+                      <span class="badge badge-success">En curso</span>
+                  <?php endif; ?>
+                </td>
+                <td>
+                  <form method="post" class="form-inline">
+                    <?= Session::csrfField() ?>
+                    <input type="hidden" name="action" value="extend" />
+                    <input type="hidden" name="loan_id" value="<?= (int)$l['PrestamosID'] ?>" />
+                    <div class="input-group input-group-sm">
+                      <input type="number" class="form-control" name="days" value="5" min="1" style="max-width:90px">
+                      <div class="input-group-append">
+                        <button class="btn btn-outline-secondary" type="submit">Extender</button>
+                      </div>
+                    </div>
+                  </form>
+                </td>
+              <?php endif; ?>
             </tr>
           <?php endforeach; ?>
           <?php if (empty($activeLoans)): ?>
-            <tr><td colspan="7" class="text-center text-muted">Sin préstamos</td></tr>
+            <tr><td colspan="<?= $activeOnly?9:8 ?>" class="text-center text-muted">Sin préstamos</td></tr>
           <?php endif; ?>
           </tbody>
         </table>

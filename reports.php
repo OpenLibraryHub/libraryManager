@@ -12,6 +12,21 @@ Session::start();
 $loanModel = new Loan();
 $bookModel = new Book();
 
+$doExport = isset($_GET['export']) && $_GET['export'] === 'loans';
+if ($doExport) {
+  // CSV export of loans
+  $rows = $loanModel->exportLoansData();
+  header('Content-Type: text/csv; charset=utf-8');
+  header('Content-Disposition: attachment; filename=loans_export_' . date('Ymd_His') . '.csv');
+  $out = fopen('php://output', 'w');
+  if (!empty($rows)) {
+    fputcsv($out, array_keys($rows[0]));
+    foreach ($rows as $r) { fputcsv($out, $r); }
+  }
+  fclose($out);
+  exit;
+}
+
 $loanStats = $loanModel->getStatistics();
 $bookStats = $bookModel->getStatistics();
 ?>
@@ -33,6 +48,7 @@ $bookStats = $bookModel->getStatistics();
       <a href="books.php" class="btn btn-outline-secondary">Libros</a>
       <a href="loans.php" class="btn btn-primary">Préstamos</a>
       <a href="returns.php" class="btn btn-secondary">Devoluciones</a>
+      <a href="reports.php?export=loans" class="btn btn-success ml-2">Exportar préstamos (CSV)</a>
     </div>
   </div>
 
@@ -74,8 +90,8 @@ $bookStats = $bookModel->getStatistics();
               <tbody>
                 <?php foreach ($loanStats['most_borrowed'] as $row): ?>
                   <tr>
-                    <td><?= htmlspecialchars($row['Titulo'] ?? '') ?></td>
-                    <td><?= htmlspecialchars($row['Autor'] ?? '') ?></td>
+                    <td><?= htmlspecialchars($row['title'] ?? '') ?></td>
+                    <td><?= htmlspecialchars($row['author'] ?? '') ?></td>
                     <td><?= (int)$row['loan_count'] ?></td>
                   </tr>
                 <?php endforeach; ?>
@@ -98,7 +114,7 @@ $bookStats = $bookModel->getStatistics();
               <tbody>
                 <?php foreach ($loanStats['most_active_users'] as $row): ?>
                   <tr>
-                    <td><?= htmlspecialchars(($row['Nombre'] ?? '') . ' ' . ($row['Apellido'] ?? '')) ?></td>
+                    <td><?= htmlspecialchars(($row['first_name'] ?? '') . ' ' . ($row['last_name'] ?? '')) ?></td>
                     <td><?= (int)$row['loan_count'] ?></td>
                   </tr>
                 <?php endforeach; ?>

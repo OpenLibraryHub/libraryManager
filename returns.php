@@ -11,6 +11,8 @@ Session::start();
 $loanModel = new Loan();
 $message = '';
 $success = false;
+$q = trim((string)($_GET['q'] ?? ''));
+$field = $_GET['field'] ?? 'all';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'return') {
     if (!Session::verifyCsrfToken($_POST['csrf_token'] ?? '')) {
@@ -30,7 +32,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'retur
     }
 }
 
-$activeLoans = $loanModel->getActiveLoans();
+$activeLoans = $q !== '' ? $loanModel->searchLoans($q, $field, true) : $loanModel->getActiveLoans();
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -55,6 +57,34 @@ $activeLoans = $loanModel->getActiveLoans();
   <?php if ($message): ?>
     <div class="alert <?= $success ? 'alert-success':'alert-danger' ?>"><?= htmlspecialchars($message) ?></div>
   <?php endif; ?>
+
+  <div class="card mb-3">
+    <div class="card-body">
+      <h5 class="card-title">Buscar préstamos activos</h5>
+      <form method="get" class="form-inline">
+        <div class="form-row align-items-end w-100">
+          <div class="col-md-5 mb-2">
+            <label class="small text-muted d-block">Búsqueda</label>
+            <input class="form-control" type="text" name="q" value="<?= htmlspecialchars($q) ?>" placeholder="Libro, usuario o cédula">
+          </div>
+          <div class="col-md-3 mb-2">
+            <label class="small text-muted d-block">Campo</label>
+            <select class="form-control" name="field">
+              <option value="all" <?= $field==='all'?'selected':'' ?>>Todos</option>
+              <option value="book" <?= $field==='book'?'selected':'' ?>>Libro</option>
+              <option value="user" <?= $field==='user'?'selected':'' ?>>Usuario</option>
+              <option value="id" <?= $field==='id'?'selected':'' ?>>Cédula</option>
+              <option value="key" <?= $field==='key'?'selected':'' ?>>Llave</option>
+            </select>
+          </div>
+          <div class="col-md-4 mb-2">
+            <button class="btn btn-outline-primary mr-2" type="submit">Aplicar</button>
+            <a class="btn btn-outline-secondary" href="returns.php">Limpiar</a>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
 
   <div class="card">
     <div class="table-responsive">

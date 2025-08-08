@@ -41,10 +41,10 @@ class Book extends Model {
     /** Get a page of books with joins */
     public function getPage(int $limit, int $offset, bool $onlyAvailable = false): array {
         $sql = "SELECT l.*, 
-                c.description as clasificacion,
-                o.donated_by as origen,
-                e.description as etiqueta,
-                s.description as sala
+                c.description as classification,
+                o.donated_by as origin,
+                e.description as label,
+                s.description as room
                 FROM {$this->table} l
                 LEFT JOIN classifications c ON l.classification_id = c.classification_id
                 LEFT JOIN origins o ON l.origin_id = o.origin_id
@@ -67,11 +67,11 @@ class Book extends Model {
      */
     public function getBookWithDetails($id): ?array {
         $sql = "SELECT l.*, 
-                c.description as clasificacion_desc,
-                o.donated_by as origen_desc,
-                e.description as etiqueta_desc,
-                e.color as etiqueta_color,
-                s.description as sala_desc
+                c.description as classification_desc,
+                o.donated_by as origin_desc,
+                e.description as label_desc,
+                e.color as label_color,
+                s.description as room_desc
                 FROM {$this->table} l
                 LEFT JOIN classifications c ON l.classification_id = c.classification_id
                 LEFT JOIN origins o ON l.origin_id = o.origin_id
@@ -88,8 +88,8 @@ class Book extends Model {
      */
     public function findByISBN($isbn): ?array {
         $sql = "SELECT l.*, 
-                c.description as ClasificacionDesc,
-                s.description as sala
+                c.description as classification_desc,
+                s.description as room
                 FROM {$this->table} l
                 LEFT JOIN classifications c ON l.classification_id = c.classification_id
                 LEFT JOIN rooms s ON l.room_id = s.room_id
@@ -104,10 +104,10 @@ class Book extends Model {
      */
     public function getAvailableBooks(): array {
         $sql = "SELECT l.*, 
-                c.description as clasificacion,
+                c.description as classification,
                 o.donated_by,
-                e.description as etiqueta,
-                s.description
+                e.description as label,
+                s.description as room
                 FROM {$this->table} l
                 LEFT JOIN classifications c ON l.classification_id = c.classification_id
                 LEFT JOIN origins o ON l.origin_id = o.origin_id
@@ -126,10 +126,10 @@ class Book extends Model {
         $query = '%' . $this->db->escape($query) . '%';
         
         $baseQuery = "SELECT l.*, 
-                      c.description as clasificacion,
+                      c.description as classification,
                       o.donated_by,
-                      e.description as etiqueta,
-                      s.description
+                      e.description as label,
+                      s.description as room
                       FROM {$this->table} l
                       LEFT JOIN classifications c ON l.classification_id = c.classification_id
                       LEFT JOIN origins o ON l.origin_id = o.origin_id
@@ -143,16 +143,16 @@ class Book extends Model {
         }
         
         switch ($field) {
-            case 'titulo':
+            case 'title':
                 $whereConditions[] = "l.title LIKE ?";
                 break;
-            case 'autor':
+            case 'author':
                 $whereConditions[] = "l.author LIKE ?";
                 break;
             case 'isbn':
                 $whereConditions[] = "l.isbn LIKE ?";
                 break;
-            case 'codigo':
+            case 'code':
                 $whereConditions[] = "l.classification_code LIKE ?";
                 break;
             default:
@@ -305,20 +305,20 @@ class Book extends Model {
      * Create book with validation
      */
     public function createBook(array $data) {
-        // Map Spanish form keys to English DB columns
+        // Accept English keys directly
         $payload = [
-            'isbn' => $data['LibrosID'] ?? null,
-            'title' => $data['Titulo'] ?? null,
-            'author' => $data['Autor'] ?? null,
-            'classification_id' => $data['ClasificacionID'] ?? null,
-            'classification_code' => $data['CodigoClasificacion'] ?? null,
-            'copies_total' => isset($data['N_Ejemplares']) ? (int)$data['N_Ejemplares'] : null,
-            'origin_id' => isset($data['OrigenID']) ? (int)$data['OrigenID'] : null,
-            'copies_available' => isset($data['N_Disponible']) ? (int)$data['N_Disponible'] : (isset($data['N_Ejemplares']) ? (int)$data['N_Ejemplares'] : 0),
-            'label_id' => ($data['EtiquetaID'] ?? '') === '' ? null : $data['EtiquetaID'],
-            'library_id' => $data['BibliotecaID'] ?? 683070001001,
-            'room_id' => isset($data['SalaID']) ? (int)$data['SalaID'] : null,
-            'notes' => $data['Observacion'] ?? null,
+            'isbn' => $data['isbn'] ?? null,
+            'title' => $data['title'] ?? null,
+            'author' => $data['author'] ?? null,
+            'classification_id' => isset($data['classification_id']) ? (int)$data['classification_id'] : null,
+            'classification_code' => $data['classification_code'] ?? null,
+            'copies_total' => isset($data['copies_total']) ? (int)$data['copies_total'] : null,
+            'origin_id' => isset($data['origin_id']) ? (int)$data['origin_id'] : null,
+            'copies_available' => isset($data['copies_available']) ? (int)$data['copies_available'] : (isset($data['copies_total']) ? (int)$data['copies_total'] : 0),
+            'label_id' => ($data['label_id'] ?? '') === '' ? null : (int)$data['label_id'],
+            'library_id' => $data['library_id'] ?? 683070001001,
+            'room_id' => isset($data['room_id']) ? (int)$data['room_id'] : null,
+            'notes' => $data['notes'] ?? null,
         ];
         return $this->create($payload);
     }
@@ -330,40 +330,40 @@ class Book extends Model {
         $validator = new Validator();
         
         $rules = [
-            'Titulo' => 'required|min:1|max:300',
-            'Autor' => 'max:512',
-            'ClasificacionID' => 'max:100',
-            'N_Ejemplares' => 'integer|min:1',
-            'N_Disponible' => 'integer|min:0',
-            'OrigenID' => 'integer',
-            'SalaID' => 'integer',
+            'title' => 'required|min:1|max:300',
+            'author' => 'max:512',
+            'classification_id' => 'max:100',
+            'copies_total' => 'integer|min:1',
+            'copies_available' => 'integer|min:0',
+            'origin_id' => 'integer',
+            'room_id' => 'integer',
         ];
         
-        // Only validate ISBN format if provided (non-empty)
-        if (isset($data['LibrosID']) && $data['LibrosID'] !== null && $data['LibrosID'] !== '') {
-            $rules['LibrosID'] = 'numeric';
+        // ISBN is optional but if provided validate format
+        if (isset($data['isbn']) && $data['isbn'] !== null && $data['isbn'] !== '') {
+            $rules['isbn'] = 'isbn';
         }
         
-        if (isset($data['CodigoClasificacion']) && !empty($data['CodigoClasificacion'])) {
-            $rules['CodigoClasificacion'] = 'max:100';
+        if (isset($data['classification_code']) && !empty($data['classification_code'])) {
+            $rules['classification_code'] = 'max:100';
         }
         
-        if (isset($data['Observacion']) && !empty($data['Observacion'])) {
-            $rules['Observacion'] = 'max:100';
+        if (isset($data['notes']) && !empty($data['notes'])) {
+            $rules['notes'] = 'max:100';
         }
         
         $validator->validate($data, $rules);
         $errors = $validator->getErrors();
         
-        // Additional validation: N_Disponible should not exceed N_Ejemplares
-        if (isset($data['N_Disponible'], $data['N_Ejemplares']) && $data['N_Disponible'] > $data['N_Ejemplares']) {
-            $errors['N_Disponible'][] = 'El número disponible no puede ser mayor que el número de ejemplares.';
+        // Additional validation: copies_available should not exceed copies_total
+        if (isset($data['copies_available'], $data['copies_total']) && $data['copies_available'] > $data['copies_total']) {
+            $errors['copies_available'][] = 'Available copies cannot be greater than total copies.';
         }
         
         // Uniqueness check for ISBN when provided; skip if blank
-        if (!$isUpdate && isset($data['LibrosID']) && $data['LibrosID'] !== null && $data['LibrosID'] !== '') {
-            if ($this->isbnExists($data['LibrosID'])) {
-                $errors['LibrosID'][] = 'Este ISBN ya existe.';
+        if (!$isUpdate && isset($data['isbn']) && $data['isbn'] !== null && $data['isbn'] !== '') {
+            if ($this->isbnExists($data['isbn'])) {
+                $errors['isbn'][] = 'This ISBN already exists.';
             }
         }
         

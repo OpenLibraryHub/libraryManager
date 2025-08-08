@@ -79,15 +79,15 @@ $rooms = $bookModel->getRooms();
         <?= Session::csrfField() ?>
         <div class="form-row">
           <div class="form-group col-md-4">
-            <label>ISBN (optional)</label>
+            <label>ISBN (opcional)</label>
             <input name="isbn" class="form-control" value="<?= htmlspecialchars($_POST['isbn'] ?? '') ?>" />
           </div>
           <div class="form-group col-md-4">
-            <label>Classification code (optional)</label>
+            <label>Código de clasificación (opcional)</label>
             <input name="classification_code" class="form-control" value="<?= htmlspecialchars($_POST['classification_code'] ?? '') ?>" />
           </div>
           <div class="form-group col-md-4">
-            <label>Label</label>
+            <label>Etiqueta</label>
             <select name="label_id" class="form-control">
               <option value="">Sin etiqueta</option>
               <?php foreach ($labels as $l): ?>
@@ -98,17 +98,17 @@ $rooms = $bookModel->getRooms();
         </div>
         <div class="form-row">
           <div class="form-group col-md-6">
-            <label>Title</label>
+            <label>Título</label>
             <input required name="title" class="form-control" value="<?= htmlspecialchars($_POST['title'] ?? '') ?>" />
           </div>
           <div class="form-group col-md-6">
-            <label>Author</label>
+            <label>Autor</label>
             <input required name="author" class="form-control" value="<?= htmlspecialchars($_POST['author'] ?? '') ?>" />
           </div>
         </div>
         <div class="form-row">
           <div class="form-group col-md-4">
-            <label>Classification</label>
+            <label>Clasificación</label>
             <select required name="classification_id" class="form-control">
               <?php foreach ($classifications as $c): ?>
                 <option value="<?= htmlspecialchars($c['id']) ?>"><?= htmlspecialchars($c['body']) ?></option>
@@ -116,7 +116,7 @@ $rooms = $bookModel->getRooms();
             </select>
           </div>
           <div class="form-group col-md-4">
-            <label>Origin</label>
+            <label>Origen</label>
             <select required name="origin_id" class="form-control">
               <?php foreach ($origins as $o): ?>
                 <option value="<?= (int)$o['id'] ?>"><?= htmlspecialchars($o['body']) ?></option>
@@ -124,7 +124,7 @@ $rooms = $bookModel->getRooms();
             </select>
           </div>
           <div class="form-group col-md-4">
-            <label>Room</label>
+            <label>Sala</label>
             <select required name="room_id" class="form-control">
               <?php foreach ($rooms as $r): ?>
                 <option value="<?= (int)$r['id'] ?>"><?= htmlspecialchars($r['body']) ?></option>
@@ -134,11 +134,11 @@ $rooms = $bookModel->getRooms();
         </div>
         <div class="form-row">
           <div class="form-group col-md-3">
-            <label>Copies</label>
+            <label>Ejemplares</label>
             <input required type="number" min="1" name="copies_total" class="form-control" value="<?= htmlspecialchars($_POST['copies_total'] ?? '1') ?>" />
           </div>
           <div class="form-group col-md-9">
-            <label>Notes</label>
+            <label>Observación</label>
             <input name="notes" class="form-control" value="<?= htmlspecialchars($_POST['notes'] ?? '') ?>" />
           </div>
         </div>

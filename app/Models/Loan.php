@@ -29,18 +29,18 @@ class Loan extends Model {
      */
     public function getActiveLoans(): array {
         $sql = "SELECT 
-                p.loan_id AS PrestamosID,
-                p.loaned_at AS fecha_prestamo,
-                p.due_at AS fecha_limite,
-                p.returned AS devuelto,
-                p.returned_at AS fecha_entregado,
-                l.title AS Titulo,
-                l.author AS Autor,
-                l.isbn AS ISBN,
-                u.first_name AS Nombre,
-                u.last_name AS Apellido,
-                u.email AS Correo,
-                u.id_number AS Cedula
+                p.loan_id AS loan_id,
+                p.loaned_at AS loaned_at,
+                p.due_at AS due_at,
+                p.returned AS returned,
+                p.returned_at AS returned_at,
+                l.title AS title,
+                l.author AS author,
+                l.isbn AS isbn,
+                u.first_name AS first_name,
+                u.last_name AS last_name,
+                u.email AS email,
+                u.id_number AS id_number
                 FROM {$this->table} p
                 INNER JOIN books l ON p.book_id = l.id
                 INNER JOIN users u ON p.user_id = u.id_number
@@ -55,18 +55,18 @@ class Loan extends Model {
      */
     public function getReturnedLoans(): array {
         $sql = "SELECT 
-                p.loan_id AS PrestamosID,
-                p.loaned_at AS fecha_prestamo,
-                p.due_at AS fecha_limite,
-                p.returned AS devuelto,
-                p.returned_at AS fecha_entregado,
-                l.title AS Titulo,
-                l.author AS Autor,
-                l.isbn AS ISBN,
-                u.first_name AS Nombre,
-                u.last_name AS Apellido,
-                u.email AS Correo,
-                u.id_number AS Cedula
+                p.loan_id AS loan_id,
+                p.loaned_at AS loaned_at,
+                p.due_at AS due_at,
+                p.returned AS returned,
+                p.returned_at AS returned_at,
+                l.title AS title,
+                l.author AS author,
+                l.isbn AS isbn,
+                u.first_name AS first_name,
+                u.last_name AS last_name,
+                u.email AS email,
+                u.id_number AS id_number
                 FROM {$this->table} p
                 INNER JOIN books l ON p.book_id = l.id
                 INNER JOIN users u ON p.user_id = u.id_number
@@ -83,17 +83,17 @@ class Loan extends Model {
         $query = '%' . $this->db->escape($query) . '%';
         
         $baseQuery = "SELECT 
-                      p.loan_id AS PrestamosID,
-                      p.loaned_at AS fecha_prestamo,
-                      p.due_at AS fecha_limite,
-                      p.returned AS devuelto,
-                      p.returned_at AS fecha_entregado,
-                      l.title AS Titulo,
-                      l.author AS Autor,
-                      u.first_name AS Nombre,
-                      u.last_name AS Apellido,
-                      u.email AS Correo,
-                      u.id_number AS Cedula
+                      p.loan_id AS loan_id,
+                      p.loaned_at AS loaned_at,
+                      p.due_at AS due_at,
+                      p.returned AS returned,
+                      p.returned_at AS returned_at,
+                      l.title AS title,
+                      l.author AS author,
+                      u.first_name AS first_name,
+                      u.last_name AS last_name,
+                      u.email AS email,
+                      u.id_number AS id_number
                       FROM {$this->table} p
                       INNER JOIN books l ON p.book_id = l.id
                       INNER JOIN users u ON p.user_id = u.id_number";
@@ -105,16 +105,16 @@ class Loan extends Model {
         }
         
         switch ($field) {
-            case 'libro':
+            case 'book':
                 $whereConditions[] = "l.title LIKE ?";
                 break;
-            case 'usuario':
+            case 'user':
                 $whereConditions[] = "u.first_name LIKE ?";
                 break;
-            case 'llave':
+            case 'key':
                 $whereConditions[] = "u.user_key LIKE ?";
                 break;
-            case 'cedula':
+            case 'id':
                 $whereConditions[] = "u.id_number LIKE ?";
                 break;
             default:
@@ -276,12 +276,12 @@ class Loan extends Model {
      */
     public function getUserActiveLoans(int $userId): array {
         $sql = "SELECT 
-                p.loan_id AS PrestamosID,
-                p.loaned_at AS fecha_prestamo,
-                p.due_at AS fecha_limite,
-                l.title AS Titulo,
-                l.author AS Autor,
-                l.isbn AS ISBN
+                p.loan_id AS loan_id,
+                p.loaned_at AS loaned_at,
+                p.due_at AS due_at,
+                l.title AS title,
+                l.author AS author,
+                l.isbn AS isbn
                 FROM {$this->table} p
                 INNER JOIN books l ON p.book_id = l.id
                 WHERE p.user_id = ? AND p.returned = 0
@@ -295,14 +295,14 @@ class Loan extends Model {
      */
     public function getUserLoanHistory(int $userId): array {
         $sql = "SELECT 
-                p.loan_id AS PrestamosID,
-                p.loaned_at AS fecha_prestamo,
-                p.due_at AS fecha_limite,
-                p.returned AS devuelto,
-                p.returned_at AS fecha_entregado,
-                l.title AS Titulo,
-                l.author AS Autor,
-                l.isbn AS ISBN
+                p.loan_id AS loan_id,
+                p.loaned_at AS loaned_at,
+                p.due_at AS due_at,
+                p.returned AS returned,
+                p.returned_at AS returned_at,
+                l.title AS title,
+                l.author AS author,
+                l.isbn AS isbn
                 FROM {$this->table} p
                 INNER JOIN books l ON p.book_id = l.id
                 WHERE p.user_id = ?
@@ -364,7 +364,7 @@ class Loan extends Model {
         $stats['returns_this_month'] = $result ? $result['returns_this_month'] : 0;
         
         // Most borrowed books
-        $sql = "SELECT l.title AS Titulo, l.author AS Autor, COUNT(p.loan_id) as loan_count
+        $sql = "SELECT l.title AS title, l.author AS author, COUNT(p.loan_id) as loan_count
                 FROM {$this->table} p
                 INNER JOIN books l ON p.book_id = l.id
                 GROUP BY p.book_id
@@ -373,7 +373,7 @@ class Loan extends Model {
         $stats['most_borrowed'] = $this->db->query($sql) ?: [];
         
         // Most active users
-        $sql = "SELECT u.first_name AS Nombre, u.last_name AS Apellido, COUNT(p.loan_id) as loan_count
+        $sql = "SELECT u.first_name AS first_name, u.last_name AS last_name, COUNT(p.loan_id) as loan_count
                 FROM {$this->table} p
                 INNER JOIN users u ON p.user_id = u.id_number
                 GROUP BY p.user_id
@@ -389,17 +389,17 @@ class Loan extends Model {
      */
     public function exportLoansData(): array {
         $sql = "SELECT 
-                l.title AS libro,
-                l.author AS autor,
-                l.classification_id AS clasificacion,
-                l.classification_code AS clasificacion_completa,
-                CONCAT(u.first_name, ' ', u.last_name) AS nombre,
-                u.id_number AS cedula,
-                p.note AS observacion,
-                p.loaned_at AS fecha_prestamo,
-                p.due_at AS fecha_limite,
-                IF(p.returned = 1, 'SI', 'NO') AS devuelto,
-                p.returned_at AS fecha_entregado
+                l.title AS title,
+                l.author AS author,
+                l.classification_id AS classification_id,
+                l.classification_code AS classification_code,
+                CONCAT(u.first_name, ' ', u.last_name) AS user,
+                u.id_number AS user_id,
+                p.note AS note,
+                p.loaned_at AS loaned_at,
+                p.due_at AS due_at,
+                IF(p.returned = 1, 'YES', 'NO') AS returned,
+                p.returned_at AS returned_at
                 FROM {$this->table} p
                 INNER JOIN books l ON l.id = p.book_id
                 INNER JOIN users u ON u.id_number = p.user_id
