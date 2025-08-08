@@ -36,6 +36,7 @@ define('SESSION_LIFETIME', $_ENV['SESSION_LIFETIME'] ?? 120);
 define('CSRF_ENABLED', filter_var($_ENV['CSRF_ENABLED'] ?? true, FILTER_VALIDATE_BOOLEAN));
 define('PASSWORD_ALGO', PASSWORD_BCRYPT);
 define('PASSWORD_OPTIONS', ['cost' => 12]);
+define('ADMIN_EMAILS', array_filter(array_map('trim', explode(',', $_ENV['ADMIN_EMAILS'] ?? ''))));
 
 // Paths Configuration
 define('VIEWS_PATH', APP_ROOT . '/resources/views');

@@ -7,6 +7,7 @@ use App\Models\Book;
 use App\Models\Loan;
 
 AuthMiddleware::require();
+if (!\App\Middleware\AuthMiddleware::hasRole('admin')) { http_response_code(403); die('No autorizado'); }
 Session::start();
 
 $id = (int)($_GET['id'] ?? 0);

@@ -250,17 +250,17 @@ class Loan extends Model {
      */
     public function getOverdueLoans(): array {
         $sql = "SELECT 
-                p.loan_id AS PrestamosID,
-                p.loaned_at AS fecha_prestamo,
-                p.due_at AS fecha_limite,
-                p.returned AS devuelto,
-                p.returned_at AS fecha_entregado,
-                l.title AS Titulo,
-                l.author AS Autor,
-                u.first_name AS Nombre,
-                u.last_name AS Apellido,
-                u.email AS Correo,
-                u.id_number AS Cedula,
+                p.loan_id AS loan_id,
+                p.loaned_at AS loaned_at,
+                p.due_at AS due_at,
+                p.returned AS returned,
+                p.returned_at AS returned_at,
+                l.title AS title,
+                l.author AS author,
+                u.first_name AS first_name,
+                u.last_name AS last_name,
+                u.email AS email,
+                u.id_number AS id_number,
                 DATEDIFF(NOW(), p.due_at) as days_overdue
                 FROM {$this->table} p
                 INNER JOIN books l ON p.book_id = l.id

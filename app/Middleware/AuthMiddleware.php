@@ -140,9 +140,12 @@ class AuthMiddleware {
      * @return bool
      */
     public static function hasRole(string $role): bool {
-        // This is a placeholder - implement based on your role system
-        // For now, all authenticated users are considered librarians
-        return self::check(false);
+        if (!self::check(false)) return false;
+        $email = Session::get('user_email');
+        if ($role === 'admin') {
+            return in_array($email, ADMIN_EMAILS, true);
+        }
+        return true; // default librarian
     }
     
     /**

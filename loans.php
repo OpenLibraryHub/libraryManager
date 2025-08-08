@@ -169,20 +169,21 @@ $activeLoans = $q !== '' ? $loanModel->searchLoans($q, $field, $activeOnly) : ($
           <tbody>
           <?php foreach ($activeLoans as $l): ?>
             <tr>
-              <td><?= (int)$l['PrestamosID'] ?></td>
-              <td><?= htmlspecialchars($l['Titulo'] ?? '') ?></td>
-              <td><?= htmlspecialchars($l['Autor'] ?? '') ?></td>
-              <td><?= htmlspecialchars(($l['Nombre'] ?? '') . ' ' . ($l['Apellido'] ?? '')) ?></td>
-              <td><?= htmlspecialchars((string)$l['Cedula']) ?></td>
-              <td><?= htmlspecialchars($l['fecha_prestamo']) ?></td>
-              <td><?= htmlspecialchars($l['fecha_limite']) ?></td>
-              <?php if(!$activeOnly): ?><td><?= htmlspecialchars($l['fecha_entregado'] ?? '') ?></td><?php endif; ?>
+              <td><?= (int)($l['PrestamosID'] ?? $l['loan_id'] ?? 0) ?></td>
+              <td><?= htmlspecialchars($l['Titulo'] ?? $l['title'] ?? '') ?></td>
+              <td><?= htmlspecialchars($l['Autor'] ?? $l['author'] ?? '') ?></td>
+              <td><?= htmlspecialchars(($l['Nombre'] ?? $l['first_name'] ?? '') . ' ' . ($l['Apellido'] ?? $l['last_name'] ?? '')) ?></td>
+              <td><?= htmlspecialchars((string)($l['Cedula'] ?? $l['id_number'] ?? '')) ?></td>
+              <td><?= htmlspecialchars($l['fecha_prestamo'] ?? $l['loaned_at'] ?? '') ?></td>
+              <td><?= htmlspecialchars($l['fecha_limite'] ?? $l['due_at'] ?? '') ?></td>
+              <?php if(!$activeOnly): ?><td><?= htmlspecialchars($l['fecha_entregado'] ?? $l['returned_at'] ?? '') ?></td><?php endif; ?>
               <?php if($activeOnly): ?>
                 <td>
                   <?php 
-                    $isOverdue = isset($l['fecha_limite']) && strtotime($l['fecha_limite']) < time();
+                    $limite = $l['fecha_limite'] ?? $l['due_at'] ?? '';
+                    $isOverdue = $limite && strtotime($limite) < time();
                     if ($isOverdue):
-                      $daysOver = (int)floor((time() - strtotime($l['fecha_limite']))/86400);
+                      $daysOver = (int)floor((time() - strtotime($limite))/86400);
                   ?>
                       <span class="badge badge-danger">Vencido <?= $daysOver ?> d</span>
                   <?php else: ?>
@@ -193,7 +194,7 @@ $activeLoans = $q !== '' ? $loanModel->searchLoans($q, $field, $activeOnly) : ($
                   <form method="post" class="form-inline">
                     <?= Session::csrfField() ?>
                     <input type="hidden" name="action" value="extend" />
-                    <input type="hidden" name="loan_id" value="<?= (int)$l['PrestamosID'] ?>" />
+                    <input type="hidden" name="loan_id" value="<?= (int)($l['PrestamosID'] ?? $l['loan_id'] ?? 0) ?>" />
                     <div class="input-group input-group-sm">
                       <input type="number" class="form-control" name="days" value="5" min="1" style="max-width:90px">
                       <div class="input-group-append">

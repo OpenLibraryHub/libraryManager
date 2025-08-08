@@ -6,6 +6,7 @@ use App\Helpers\Session;
 use App\Models\Book;
 
 AuthMiddleware::require();
+if (!\App\Middleware\AuthMiddleware::hasRole('admin')) { http_response_code(403); die('No autorizado'); }
 Session::start();
 
 $bookModel = new Book();
