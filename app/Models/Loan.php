@@ -270,6 +270,30 @@ class Loan extends Model {
         
         return $this->db->query($sql) ?: [];
     }
+
+    /**
+     * Get loans due within the next N days (default 3), not returned yet
+     */
+    public function getDueSoonLoans(int $days = 3): array {
+        if ($days < 1) { $days = 1; }
+        $sql = "SELECT 
+                p.loan_id AS loan_id,
+                p.loaned_at AS loaned_at,
+                p.due_at AS due_at,
+                l.title AS title,
+                l.author AS author,
+                u.first_name AS first_name,
+                u.last_name AS last_name,
+                u.email AS email,
+                u.id_number AS id_number,
+                DATEDIFF(p.due_at, NOW()) as days_left
+                FROM {$this->table} p
+                INNER JOIN books l ON p.book_id = l.id
+                INNER JOIN users u ON p.user_id = u.id_number
+                WHERE p.returned = 0 AND p.due_at >= NOW() AND p.due_at <= DATE_ADD(NOW(), INTERVAL ? DAY)
+                ORDER BY p.due_at ASC";
+        return $this->db->query($sql, 'i', [$days]) ?: [];
+    }
     
     /**
      * Get user's active loans

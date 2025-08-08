@@ -24,6 +24,9 @@ if ($export) {
     $rows = $loanModel->exportLoansData();
   } elseif ($export === 'overdue') {
     $rows = $loanModel->getOverdueLoans();
+  } elseif ($export === 'due_soon') {
+    $days = max(1, (int)($_GET['days'] ?? 3));
+    $rows = $loanModel->getDueSoonLoans($days);
   } elseif ($export === 'users') {
     $userModel = new User();
     $rows = $userModel->all();
@@ -61,6 +64,7 @@ $bookStats = $bookModel->getStatistics();
       <a href="returns.php" class="btn btn-secondary">Devoluciones</a>
       <a href="reports.php?export=loans" class="btn btn-success ml-2">Exportar préstamos (CSV)</a>
       <a href="reports.php?export=overdue" class="btn btn-warning ml-2">Exportar vencidos (CSV)</a>
+      <a href="reports.php?export=due_soon&days=3" class="btn btn-outline-warning ml-2">Exportar por vencer (3d)</a>
       <a href="reports.php?export=users" class="btn btn-outline-primary ml-2">Exportar usuarios (CSV)</a>
       <a href="reports.php?export=books" class="btn btn-outline-secondary ml-2">Exportar libros (CSV)</a>
     </div>
