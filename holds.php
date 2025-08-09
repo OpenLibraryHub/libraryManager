@@ -22,7 +22,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $bookId = (int)($_POST['book_id'] ?? 0);
     $userId = (int)($_POST['user_id'] ?? 0);
     if ($bookId && $userId) {
-      if ($holdModel->userHasHold($bookId, $userId)) {
+      $book = $bookModel->find($bookId);
+      if (!$book) {
+        $message = 'Libro no encontrado.';
+      } elseif ((int)($book['copies_available'] ?? 0) > 0) {
+        $message = 'Hay ejemplares disponibles. Realiza el préstamo desde la sección Préstamos.';
+      } elseif ($holdModel->userHasHold($bookId, $userId)) {
         $message = 'El usuario ya está en lista de espera para este libro.';
       } else {
         if ($holdModel->createHold($bookId, $userId)) {
