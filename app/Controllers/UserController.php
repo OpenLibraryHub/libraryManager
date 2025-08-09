@@ -79,7 +79,7 @@ class UserController {
             return $response;
         }
         
-        // Sanitize input
+        // Sanitize input (English keys expected)
         $sanitized = Validator::sanitizeArray($data, [
             'user_key' => 'int',
             'first_name' => 'string',
@@ -89,12 +89,16 @@ class UserController {
             'phone' => 'int',
             'address' => 'string'
         ]);
+        // Optional fields cleanup
+        if (empty($sanitized['phone'])) { unset($sanitized['phone']); }
+        if (empty($sanitized['address'])) { unset($sanitized['address']); }
+        if (empty($sanitized['phone'])) { unset($sanitized['phone']); }
         
         // Check if user already exists
         if ($this->userModel->userExists(
-            $sanitized['email'],
-            $sanitized['id_number'],
-            $sanitized['user_key'],
+            $sanitized['email'] ?? '',
+            $sanitized['id_number'] ?? 0,
+            $sanitized['user_key'] ?? 0,
             $sanitized['phone'] ?? null
         )) {
             $response['message'] = 'El usuario ya existe (correo, cédula, llave o teléfono duplicado).';

@@ -44,6 +44,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 $books = $bookModel->all();
+$queued = $holdModel->listHolds('queued');
+$fulfilled = $holdModel->listHolds('fulfilled');
+$canceled = $holdModel->listHolds('canceled');
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -88,6 +91,71 @@ $books = $bookModel->all();
     </form>
   </div></div>
 </div>
+
+<div class="card mt-3"><div class="card-body">
+  <h5 class="card-title">Solicitudes en espera</h5>
+  <div class="table-responsive">
+    <table class="table table-sm table-striped mb-0">
+      <thead class="thead-light"><tr><th>Libro</th><th>Usuario</th><th>Cédula</th><th>Fecha</th><th></th></tr></thead>
+      <tbody>
+        <?php foreach ($queued as $h): ?>
+          <tr>
+            <td><?= htmlspecialchars(($h['title'] ?? '') . ' - ' . ($h['author'] ?? '')) ?></td>
+            <td><?= htmlspecialchars(($h['first_name'] ?? '') . ' ' . ($h['last_name'] ?? '')) ?></td>
+            <td><?= htmlspecialchars((string)$h['id_number']) ?></td>
+            <td><?= htmlspecialchars($h['created_at'] ?? '') ?></td>
+            <td>
+              <form method="post" onsubmit="return confirm('¿Cancelar solicitud?')">
+                <?= Session::csrfField() ?>
+                <input type="hidden" name="cancel_hold" value="1" />
+                <input type="hidden" name="hold_id" value="<?= (int)$h['id'] ?>" />
+                <button class="btn btn-sm btn-outline-danger" type="submit">Cancelar</button>
+              </form>
+            </td>
+          </tr>
+        <?php endforeach; ?>
+        <?php if (empty($queued)): ?>
+          <tr><td colspan="5" class="text-center text-muted">Sin solicitudes</td></tr>
+        <?php endif; ?>
+      </tbody>
+    </table>
+  </div>
+</div></div>
+
+<div class="row mt-3">
+  <div class="col-md-6">
+    <div class="card"><div class="card-body">
+      <h6 class="card-title">Cumplidas</h6>
+      <ul class="mb-0">
+        <?php foreach ($fulfilled as $h): ?>
+          <li><?= htmlspecialchars(($h['title'] ?? '') . ' - ' . ($h['first_name'] ?? '') . ' ' . ($h['last_name'] ?? '')) ?> (<?= htmlspecialchars($h['fulfilled_at'] ?? '') ?>)</li>
+        <?php endforeach; ?>
+        <?php if (empty($fulfilled)): ?><li class="text-muted">Sin datos</li><?php endif; ?>
+      </ul>
+    </div></div>
+  </div>
+  <div class="col-md-6">
+    <div class="card"><div class="card-body">
+      <h6 class="card-title">Canceladas</h6>
+      <ul class="mb-0">
+        <?php foreach ($canceled as $h): ?>
+          <li><?= htmlspecialchars(($h['title'] ?? '') . ' - ' . ($h['first_name'] ?? '') . ' ' . ($h['last_name'] ?? '')) ?> (<?= htmlspecialchars($h['canceled_at'] ?? '') ?>)</li>
+        <?php endforeach; ?>
+        <?php if (empty($canceled)): ?><li class="text-muted">Sin datos</li><?php endif; ?>
+      </ul>
+    </div></div>
+  </div>
+</div>
+
+<script>
+// simple toast
+document.addEventListener('DOMContentLoaded', function(){
+  const alerts = document.querySelectorAll('.alert');
+  setTimeout(()=>alerts.forEach(a=>a.classList.add('show')), 50);
+  setTimeout(()=>alerts.forEach(a=>a.remove()), 4000);
+});
+</script>
+
 </body>
 </html>
 

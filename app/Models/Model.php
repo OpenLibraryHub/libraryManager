@@ -102,11 +102,17 @@ abstract class Model {
         
         $result = $this->db->query($sql, $types, $values);
         
-        if ($result !== false) {
-            return $this->find($this->db->lastInsertId());
+        if ($result === false) {
+            return false;
         }
         
-        return false;
+        // If the primary key is provided in payload (e.g., non-AI PK like id_number), use it to fetch
+        if (isset($data[$this->primaryKey]) && $data[$this->primaryKey] !== null && $data[$this->primaryKey] !== '') {
+            return $this->find($data[$this->primaryKey]);
+        }
+        
+        // Fallback to lastInsertId for auto-increment PKs
+        return $this->find($this->db->lastInsertId());
     }
     
     /**

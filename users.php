@@ -5,12 +5,29 @@ use App\Middleware\AuthMiddleware;
 use App\Helpers\Session;
 use App\Models\User;
 use App\Models\Loan;
+use App\Controllers\UserController;
 
 AuthMiddleware::require();
 Session::start();
 
 $userModel = new User();
 $loanModel = new Loan();
+
+// Create user handling
+$createMessage = '';
+$createSuccess = false;
+$createErrors = [];
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'create') {
+  if (!Session::verifyCsrfToken($_POST['csrf_token'] ?? '')) {
+    $createMessage = 'Token inválido';
+  } else {
+    $controller = new UserController();
+    $res = $controller->create($_POST);
+    $createMessage = $res['message'] ?? '';
+    $createSuccess = (bool)($res['success'] ?? false);
+    $createErrors = $res['errors'] ?? [];
+  }
+}
 
 $q = trim((string)($_GET['q'] ?? ''));
 $field = $_GET['field'] ?? 'all';
@@ -60,6 +77,58 @@ foreach ($activeLoans as $l) {
       <a href="returns.php" class="btn btn-secondary">Devoluciones</a>
     </div>
   </div>
+
+  <?php if ($createMessage): ?>
+    <div class="alert <?= $createSuccess ? 'alert-success':'alert-danger' ?>"><?= htmlspecialchars($createMessage) ?></div>
+  <?php endif; ?>
+
+  <div class="card mb-3"><div class="card-body">
+    <h5 class="card-title">Crear usuario</h5>
+    <form method="post">
+      <?= Session::csrfField() ?>
+      <input type="hidden" name="action" value="create" />
+      <div class="form-row">
+        <div class="form-group col-md-3">
+          <label>Cédula</label>
+          <input type="number" name="id_number" class="form-control <?= isset($createErrors['id_number']) ? 'is-invalid' : '' ?>" value="<?= htmlspecialchars($_POST['id_number'] ?? '') ?>" required />
+          <?php if (isset($createErrors['id_number'])): ?><div class="invalid-feedback"><?= htmlspecialchars($createErrors['id_number'][0]) ?></div><?php endif; ?>
+        </div>
+        <div class="form-group col-md-3">
+          <label>Llave</label>
+          <input type="number" name="user_key" class="form-control <?= isset($createErrors['user_key']) ? 'is-invalid' : '' ?>" value="<?= htmlspecialchars($_POST['user_key'] ?? '') ?>" required />
+          <?php if (isset($createErrors['user_key'])): ?><div class="invalid-feedback"><?= htmlspecialchars($createErrors['user_key'][0]) ?></div><?php endif; ?>
+        </div>
+        <div class="form-group col-md-3">
+          <label>Nombre</label>
+          <input name="first_name" class="form-control <?= isset($createErrors['first_name']) ? 'is-invalid' : '' ?>" value="<?= htmlspecialchars($_POST['first_name'] ?? '') ?>" required />
+          <?php if (isset($createErrors['first_name'])): ?><div class="invalid-feedback"><?= htmlspecialchars($createErrors['first_name'][0]) ?></div><?php endif; ?>
+        </div>
+        <div class="form-group col-md-3">
+          <label>Apellido</label>
+          <input name="last_name" class="form-control <?= isset($createErrors['last_name']) ? 'is-invalid' : '' ?>" value="<?= htmlspecialchars($_POST['last_name'] ?? '') ?>" required />
+          <?php if (isset($createErrors['last_name'])): ?><div class="invalid-feedback"><?= htmlspecialchars($createErrors['last_name'][0]) ?></div><?php endif; ?>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group col-md-4">
+          <label>Correo</label>
+          <input type="email" name="email" class="form-control <?= isset($createErrors['email']) ? 'is-invalid' : '' ?>" value="<?= htmlspecialchars($_POST['email'] ?? '') ?>" required />
+          <?php if (isset($createErrors['email'])): ?><div class="invalid-feedback"><?= htmlspecialchars($createErrors['email'][0]) ?></div><?php endif; ?>
+        </div>
+        <div class="form-group col-md-4">
+          <label>Teléfono</label>
+          <input type="number" name="phone" class="form-control <?= isset($createErrors['phone']) ? 'is-invalid' : '' ?>" value="<?= htmlspecialchars($_POST['phone'] ?? '') ?>" />
+          <?php if (isset($createErrors['phone'])): ?><div class="invalid-feedback"><?= htmlspecialchars($createErrors['phone'][0]) ?></div><?php endif; ?>
+        </div>
+        <div class="form-group col-md-4">
+          <label>Dirección</label>
+          <input name="address" class="form-control <?= isset($createErrors['address']) ? 'is-invalid' : '' ?>" value="<?= htmlspecialchars($_POST['address'] ?? '') ?>" />
+          <?php if (isset($createErrors['address'])): ?><div class="invalid-feedback"><?= htmlspecialchars($createErrors['address'][0]) ?></div><?php endif; ?>
+        </div>
+      </div>
+      <button class="btn btn-success" type="submit">Crear usuario</button>
+    </form>
+  </div></div>
 
   <div class="card mb-3"><div class="card-body">
     <h5 class="card-title">Buscar usuarios</h5>

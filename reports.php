@@ -62,11 +62,15 @@ $bookStats = $bookModel->getStatistics();
       <a href="books.php" class="btn btn-outline-secondary">Libros</a>
       <a href="loans.php" class="btn btn-primary">Préstamos</a>
       <a href="returns.php" class="btn btn-secondary">Devoluciones</a>
-      <a href="reports.php?export=loans" class="btn btn-success ml-2">Exportar préstamos (CSV)</a>
+      <?php if (\App\Middleware\AuthMiddleware::hasRole('admin')): ?>
+        <a href="reports.php?export=loans" class="btn btn-success ml-2">Exportar préstamos (CSV)</a>
+      <?php endif; ?>
       <a href="reports.php?export=overdue" class="btn btn-warning ml-2">Exportar vencidos (CSV)</a>
       <a href="reports.php?export=due_soon&days=3" class="btn btn-outline-warning ml-2">Exportar por vencer (3d)</a>
-      <a href="reports.php?export=users" class="btn btn-outline-primary ml-2">Exportar usuarios (CSV)</a>
-      <a href="reports.php?export=books" class="btn btn-outline-secondary ml-2">Exportar libros (CSV)</a>
+      <?php if (\App\Middleware\AuthMiddleware::hasRole('admin')): ?>
+        <a href="reports.php?export=users" class="btn btn-outline-primary ml-2">Exportar usuarios (CSV)</a>
+        <a href="reports.php?export=books" class="btn btn-outline-secondary ml-2">Exportar libros (CSV)</a>
+      <?php endif; ?>
     </div>
   </div>
 

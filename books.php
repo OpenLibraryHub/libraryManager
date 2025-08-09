@@ -111,8 +111,8 @@ if ($q !== '') {
             </td>
             <td><?= htmlspecialchars($b['room'] ?? '') ?></td>
             <td class="text-nowrap">
-              <a class="btn btn-sm btn-outline-primary" href="books_edit.php?id=<?= (int)$b['id'] ?>">Editar</a>
-              <a class="btn btn-sm btn-outline-danger" href="books_delete.php?id=<?= (int)$b['id'] ?>">Eliminar</a>
+              <a class="btn btn-sm btn-outline-primary" href="books_edit.php?id=<?= (int)$b['id'] ?>" onclick="return confirm('¿Editar este libro?')">Editar</a>
+              <a class="btn btn-sm btn-outline-danger" href="books_delete.php?id=<?= (int)$b['id'] ?>" onclick="return confirm('¿Eliminar o archivar este libro?')">Eliminar</a>
             </td>
           </tr>
         <?php endforeach; ?>

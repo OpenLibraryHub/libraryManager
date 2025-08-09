@@ -105,7 +105,8 @@ class User extends Model {
         $params = [$email, $idNumber, $userKey];
         $types = 'sii';
         
-        if ($phone !== null) {
+        // Solo considerar teléfono si viene con valor (>0)
+        if ($phone !== null && (int)$phone > 0) {
             $sql .= " OR phone = ?";
             $params[] = $phone;
             $types .= 'i';
@@ -114,7 +115,8 @@ class User extends Model {
         $sql .= " LIMIT 1";
         
         $result = $this->db->queryOne($sql, $types, $params);
-        return $result !== null;
+        // null => no rows; array => found; false => query error (treat as not found)
+        return is_array($result);
     }
     
     /**

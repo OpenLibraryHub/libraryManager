@@ -134,7 +134,15 @@ class Database {
      */
     public function queryOne(string $sql, string $types = '', array $params = []) {
         $result = $this->query($sql, $types, $params);
-        return $result ? ($result[0] ?? null) : false;
+        if ($result === false) {
+            // Query error
+            return false;
+        }
+        if (empty($result)) {
+            // No rows found
+            return null;
+        }
+        return $result[0];
     }
     
     /**
