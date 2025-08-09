@@ -4,11 +4,16 @@ require_once __DIR__ . '/config/autoload.php';
 use App\Middleware\AuthMiddleware;
 use App\Helpers\Session;
 use App\Models\Loan;
+use App\Models\Book;
+use App\Models\Hold;
+use App\Helpers\Notifier;
 
 AuthMiddleware::require();
 Session::start();
 
 $loanModel = new Loan();
+$bookModel = new Book();
+$holdModel = new Hold();
 $message = '';
 $success = false;
 $q = trim((string)($_GET['q'] ?? ''));
@@ -23,6 +28,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'retur
             if ($loanModel->returnLoan($loanId)) {
                 $success = true;
                 $message = 'Libro devuelto.';
+                // Suggest next in holds queue
+                $loan = $loanModel->find($loanId);
+                if ($loan) {
+                    $next = $holdModel->nextInQueue((int)$loan['book_id']);
+                    if ($next) {
+                        $book = $bookModel->find((int)$loan['book_id']);
+                        $subject = 'Libro disponible en la biblioteca';
+                        $body = 'El libro "' . ($book['title'] ?? '') . '" está disponible para retiro. Usuario: ' . (int)$next['user_id'];
+                        // In real setup, lookup user email; here we just log
+                        Notifier::sendEmail('user-' . (int)$next['user_id'] . '@example.com', $subject, $body);
+                    }
+                }
             } else {
                 $message = 'No se pudo devolver el libro.';
             }

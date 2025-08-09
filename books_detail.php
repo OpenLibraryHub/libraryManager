@@ -54,6 +54,22 @@ $queue = $holdModel->getQueueForBook((int)$book['id']);
       <div class="col-md-6">
         <p class="mb-1"><strong>Disponibles:</strong> <?= (int)($book['copies_available'] ?? 0) ?> / <?= (int)($book['copies_total'] ?? 0) ?></p>
         <p class="mb-1"><strong>Observación:</strong> <?= htmlspecialchars($book['notes'] ?? '') ?></p>
+        <?php if ((int)($book['copies_available'] ?? 0) === 0): ?>
+          <hr>
+          <form method="post" action="holds.php">
+            <?= Session::csrfField() ?>
+            <input type="hidden" name="book_id" value="<?= (int)$book['id'] ?>" />
+            <div class="form-row">
+              <div class="form-group col-md-8">
+                <label>Agregar a lista de espera (Cédula usuario)</label>
+                <input type="number" class="form-control" name="user_id" required />
+              </div>
+              <div class="form-group col-md-4 d-flex align-items-end">
+                <button class="btn btn-warning" type="submit">Agregar a lista</button>
+              </div>
+            </div>
+          </form>
+        <?php endif; ?>
       </div>
     </div>
   </div></div>
