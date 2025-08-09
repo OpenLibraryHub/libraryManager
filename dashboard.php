@@ -332,9 +332,9 @@ $overdueLoans = array_slice($loanModel->getOverdueLoans(), 0, 5);
                                     <tbody>
                                         <?php foreach ($recentLoans as $loan): ?>
                                         <tr>
-                                            <td><?= Validator::escape($loan['Titulo']) ?></td>
-                                            <td><?= Validator::escape($loan['Nombre'] . ' ' . $loan['Apellido']) ?></td>
-                                            <td><?= date('d/m/Y', strtotime($loan['fecha_prestamo'])) ?></td>
+                                            <td><?= Validator::escape($loan['title'] ?? '') ?></td>
+                                            <td><?= Validator::escape(trim(($loan['first_name'] ?? '') . ' ' . ($loan['last_name'] ?? ''))) ?></td>
+                                            <td><?= isset($loan['loaned_at']) ? date('d/m/Y', strtotime($loan['loaned_at'])) : '-' ?></td>
                                         </tr>
                                         <?php endforeach; ?>
                                     </tbody>
@@ -358,11 +358,11 @@ $overdueLoans = array_slice($loanModel->getOverdueLoans(), 0, 5);
                                     <tbody>
                                         <?php foreach ($overdueLoans as $loan): ?>
                                         <tr>
-                                            <td><?= Validator::escape($loan['Titulo']) ?></td>
-                                            <td><?= Validator::escape($loan['Nombre'] . ' ' . $loan['Apellido']) ?></td>
+                                            <td><?= Validator::escape($loan['title'] ?? '') ?></td>
+                                            <td><?= Validator::escape(trim(($loan['first_name'] ?? '') . ' ' . ($loan['last_name'] ?? ''))) ?></td>
                                             <td>
                                                 <span class="badge badge-danger">
-                                                    <?= $loan['days_overdue'] ?> días
+                                                    <?= (int)($loan['days_overdue'] ?? 0) ?> días
                                                 </span>
                                             </td>
                                         </tr>

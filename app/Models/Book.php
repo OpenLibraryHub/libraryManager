@@ -182,7 +182,7 @@ class Book extends Model {
                 WHERE id = ?";
         
         $result = $this->db->query($sql, 'iii', [$amount, $amount, $id]);
-        return $result !== false && $this->db->affectedRows() > 0;
+        return $result !== false;
     }
     
     /**
@@ -190,21 +190,24 @@ class Book extends Model {
      */
     public function decreaseAvailability($id, int $amount = 1): bool {
         $sql = "UPDATE {$this->table} 
-                SET copies_available = copies_available - ?
-                WHERE id = ? AND copies_available >= ?";
+                SET copies_available = CASE WHEN copies_available >= ? THEN copies_available - ? ELSE copies_available END
+                WHERE id = ?";
         
-        $result = $this->db->query($sql, 'iii', [$amount, $id, $amount]);
-        return $result !== false && $this->db->affectedRows() > 0;
+        $result = $this->db->query($sql, 'iii', [$amount, $amount, $id]);
+        return $result !== false;
     }
     
     /**
      * Check if book is available for loan
      */
     public function isAvailable($id): bool {
-        $sql = "SELECT copies_available FROM {$this->table} WHERE id = ? LIMIT 1";
+        $sql = "SELECT copies_available, notes FROM {$this->table} WHERE id = ? LIMIT 1";
         $result = $this->db->queryOne($sql, 'i', [$id]);
-        
-        return $result && (int)$result['copies_available'] > 0;
+        if (!$result) { return false; }
+        // Consider archived (notes starts with [ARCHIVED]) as not available
+        $notes = (string)($result['notes'] ?? '');
+        if (strncmp($notes, '[ARCHIVED]', 10) === 0) { return false; }
+        return (int)$result['copies_available'] > 0;
     }
 
     /**

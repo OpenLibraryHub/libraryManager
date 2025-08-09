@@ -25,20 +25,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'creat
         $days = max(1, (int)($_POST['days'] ?? 15));
         $obs = trim((string)($_POST['observation'] ?? ''));
         try {
-            // Allow non-numeric identifiers
-            if ($bookId === 0 && isset($_POST['book_id'])) {
-                $bookIdentifier = trim((string)$_POST['book_id']);
-                if ($bookIdentifier !== '' && !ctype_digit($bookIdentifier)) {
-                    $book = (new \App\Models\Book())->findByISBN($bookIdentifier);
-                    if ($book) { $bookId = (int)$book['id']; }
-                }
+            // Resolve book: try by internal ID first; if not found, try by ISBN (even if numeric)
+            $bookInput = trim((string)($_POST['book_id'] ?? ''));
+            $bookRepo = new \App\Models\Book();
+            $byId = $bookId > 0 ? $bookRepo->find($bookId) : null;
+            if (!$byId && $bookInput !== '') {
+                $byIsbn = $bookRepo->findByISBN($bookInput);
+                if ($byIsbn) { $bookId = (int)$byIsbn['id']; }
             }
-            if ($userId === 0 && isset($_POST['user_id'])) {
-                $userIdentifier = trim((string)$_POST['user_id']);
-                if ($userIdentifier !== '' && !ctype_digit($userIdentifier)) {
-                    $user = (new \App\Models\User())->findByIdentifier($userIdentifier);
-                    if ($user) { $userId = (int)$user['id_number']; }
-                }
+
+            // Resolve user: try by id_number; if not found, try by user_key (identifier)
+            $userInput = trim((string)($_POST['user_id'] ?? ''));
+            $userRepo = new \App\Models\User();
+            $byUserId = $userId > 0 ? $userRepo->find($userId) : null;
+            if (!$byUserId && $userInput !== '') {
+                $byAny = $userRepo->findByIdentifier($userInput);
+                if ($byAny) { $userId = (int)$byAny['id_number']; }
             }
             if ($loanModel->createLoan($bookId, $userId, $obs, $days)) {
                 $success = true;

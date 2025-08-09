@@ -17,6 +17,7 @@ $message = '';
 $success = false;
 $q = trim((string)($_GET['q'] ?? ''));
 $field = $_GET['field'] ?? 'all';
+$activeOnly = ($_GET['active'] ?? '1') === '1';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'return') {
     if (!Session::verifyCsrfToken($_POST['csrf_token'] ?? '')) {
@@ -53,7 +54,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'retur
     }
 }
 
-$activeLoans = $q !== '' ? $loanModel->searchLoans($q, $field, true) : $loanModel->getActiveLoans();
+$loans = $q !== '' ? $loanModel->searchLoans($q, $field, $activeOnly) : ($activeOnly ? $loanModel->getActiveLoans() : $loanModel->getReturnedLoans());
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -81,7 +82,7 @@ $activeLoans = $q !== '' ? $loanModel->searchLoans($q, $field, true) : $loanMode
 
   <div class="card mb-3">
     <div class="card-body">
-      <h5 class="card-title">Buscar préstamos activos</h5>
+      <h5 class="card-title">Buscar préstamos</h5>
       <form method="get" class="form-inline">
         <div class="form-row align-items-end w-100">
           <div class="col-md-5 mb-2">
@@ -98,7 +99,14 @@ $activeLoans = $q !== '' ? $loanModel->searchLoans($q, $field, true) : $loanMode
               <option value="key" <?= $field==='key'?'selected':'' ?>>Llave</option>
             </select>
           </div>
-          <div class="col-md-4 mb-2">
+          <div class="col-md-2 mb-2">
+            <label class="small text-muted d-block">Estado</label>
+            <select class="form-control" name="active">
+              <option value="1" <?= $activeOnly?'selected':'' ?>>Activos</option>
+              <option value="0" <?= !$activeOnly?'selected':'' ?>>Devueltos</option>
+            </select>
+          </div>
+          <div class="col-md-2 mb-2">
             <button class="btn btn-outline-primary mr-2" type="submit">Aplicar</button>
             <a class="btn btn-outline-secondary" href="returns.php">Limpiar</a>
           </div>
@@ -117,28 +125,30 @@ $activeLoans = $q !== '' ? $loanModel->searchLoans($q, $field, true) : $loanMode
             <th>Usuario</th>
             <th>Fecha préstamo</th>
             <th>Fecha límite</th>
+            <?php if(!$activeOnly): ?><th>Fecha entregado</th><?php endif; ?>
             <th></th>
           </tr>
         </thead>
         <tbody>
-        <?php foreach ($activeLoans as $l): ?>
+        <?php foreach ($loans as $l): ?>
           <tr>
-            <td><?= (int)$l['PrestamosID'] ?></td>
-            <td><?= htmlspecialchars(($l['Titulo'] ?? '') . ' - ' . ($l['Autor'] ?? '')) ?></td>
-            <td><?= htmlspecialchars(($l['Nombre'] ?? '') . ' ' . ($l['Apellido'] ?? '') . ' (' . ($l['Cedula'] ?? '') . ')') ?></td>
-            <td><?= htmlspecialchars($l['fecha_prestamo']) ?></td>
-            <td><?= htmlspecialchars($l['fecha_limite']) ?></td>
+            <td><?= (int)($l['loan_id'] ?? 0) ?></td>
+            <td><?= htmlspecialchars((string)($l['title'] ?? '')) ?><?= ($l['author'] ?? '') !== '' ? ' - ' . htmlspecialchars((string)$l['author']) : '' ?></td>
+            <td><?= htmlspecialchars(trim((string)($l['first_name'] ?? '') . ' ' . (string)($l['last_name'] ?? ''))) ?><?= isset($l['id_number']) ? ' (' . htmlspecialchars((string)$l['id_number']) . ')' : '' ?></td>
+            <td><?= htmlspecialchars((string)($l['loaned_at'] ?? '')) ?></td>
+            <td><?= htmlspecialchars((string)($l['due_at'] ?? '')) ?></td>
+            <?php if(!$activeOnly): ?><td><?= htmlspecialchars((string)($l['returned_at'] ?? '')) ?></td><?php endif; ?>
             <td>
               <form method="post" class="mb-0">
                 <?= Session::csrfField() ?>
                 <input type="hidden" name="action" value="return" />
-                <input type="hidden" name="loan_id" value="<?= (int)$l['PrestamosID'] ?>" />
+                <input type="hidden" name="loan_id" value="<?= (int)($l['loan_id'] ?? 0) ?>" />
                 <button class="btn btn-sm btn-success" type="submit">Marcar devuelto</button>
               </form>
             </td>
           </tr>
         <?php endforeach; ?>
-        <?php if (empty($activeLoans)): ?>
+        <?php if (empty($loans)): ?>
           <tr><td colspan="6" class="text-center text-muted">Sin préstamos activos</td></tr>
         <?php endif; ?>
         </tbody>
