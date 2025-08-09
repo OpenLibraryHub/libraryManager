@@ -218,6 +218,27 @@ class Book extends Model {
         if (empty($payload)) { return false; }
         return $this->update($id, $payload);
     }
+
+    /**
+     * Logical archive: set copies to zero and mark notes
+     */
+    public function archiveLogical(int $id): bool {
+        $sql = "UPDATE {$this->table} 
+                SET copies_available = 0, copies_total = 0, notes = CONCAT('[ARCHIVED] ', COALESCE(notes, ''))
+                WHERE id = ?";
+        $res = $this->db->query($sql, 'i', [$id]);
+        return $res !== false && $this->db->affectedRows() > 0;
+    }
+
+    /**
+     * Heuristic to detect archived books without DB schema change
+     */
+    public static function isArchivedRow(array $row): bool {
+        $copiesTotal = (int)($row['copies_total'] ?? 0);
+        $copiesAvail = (int)($row['copies_available'] ?? 0);
+        $notes = (string)($row['notes'] ?? '');
+        return $copiesTotal === 0 && $copiesAvail === 0 && strncmp($notes, '[ARCHIVED]', 10) === 0;
+    }
     
     /**
      * Get book statistics

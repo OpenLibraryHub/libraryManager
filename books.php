@@ -102,7 +102,13 @@ if ($q !== '') {
             <td><a href="books_detail.php?id=<?= (int)$b['id'] ?>"><?= htmlspecialchars($b['title'] ?? '') ?></a></td>
             <td><?= htmlspecialchars($b['author'] ?? '') ?></td>
             <td><?= htmlspecialchars($b['classification'] ?? '') ?></td>
-            <td><?= (int)($b['copies_available'] ?? 0) ?> / <?= (int)($b['copies_total'] ?? 0) ?></td>
+            <td>
+              <?php if (\App\Models\Book::isArchivedRow($b)): ?>
+                <span class="badge badge-secondary">Archivado</span>
+              <?php else: ?>
+                <?= (int)($b['copies_available'] ?? 0) ?> / <?= (int)($b['copies_total'] ?? 0) ?>
+              <?php endif; ?>
+            </td>
             <td><?= htmlspecialchars($b['room'] ?? '') ?></td>
             <td class="text-nowrap">
               <a class="btn btn-sm btn-outline-primary" href="books_edit.php?id=<?= (int)$b['id'] ?>">Editar</a>

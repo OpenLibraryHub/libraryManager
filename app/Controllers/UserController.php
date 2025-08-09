@@ -199,6 +199,11 @@ class UserController {
             $response['message'] = 'No autorizado.';
             return $response;
         }
+        // Require admin role
+        if (!AuthMiddleware::hasRole('admin')) {
+            $response['message'] = 'No autorizado (se requiere administrador).';
+            return $response;
+        }
         
         // Check if user has active loans
         $loanModel = new \App\Models\Loan();
@@ -237,6 +242,11 @@ class UserController {
             $response['message'] = 'No autorizado.';
             return $response;
         }
+        // Require admin role
+        if (!AuthMiddleware::hasRole('admin')) {
+            $response['message'] = 'No autorizado (se requiere administrador).';
+            return $response;
+        }
         
         try {
             if ($this->userModel->sanction($idNumber)) {
@@ -264,6 +274,11 @@ class UserController {
         // Check authentication
         if (!AuthMiddleware::check(false)) {
             $response['message'] = 'No autorizado.';
+            return $response;
+        }
+        // Require admin role
+        if (!AuthMiddleware::hasRole('admin')) {
+            $response['message'] = 'No autorizado (se requiere administrador).';
             return $response;
         }
         

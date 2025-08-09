@@ -31,19 +31,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   if (!Session::verifyCsrfToken($_POST['csrf_token'] ?? '')) {
     $message = 'Token inválido';
   } else {
-    $active = $loanModel->countActiveLoansByBook($id);
-    if ($active > 0) {
-      $message = 'No se puede eliminar: hay préstamos activos para este libro.';
+// If active loans, block; otherwise allow archive (for librarians) or hard delete for admin
+$active = $loanModel->countActiveLoansByBook($id);
+if ($active > 0) {
+  $message = 'No se puede eliminar: hay préstamos activos para este libro.';
+} else {
+  $isAdmin = \App\Middleware\AuthMiddleware::hasRole('admin');
+  if ($isAdmin && isset($_POST['hard_delete'])) {
+    if ($bookModel->delete($id)) {
+      $success = true;
+      Session::flash('success', 'Libro eliminado definitivamente');
+      header('Location: books.php');
+      exit;
     } else {
-      if ($bookModel->delete($id)) {
-        $success = true;
-        Session::flash('success', 'Libro eliminado');
-        header('Location: books.php');
-        exit;
-      } else {
-        $message = 'No se pudo eliminar el libro.';
-      }
+      $message = 'No se pudo eliminar el libro.';
     }
+  } else {
+    if ($bookModel->archiveLogical($id)) {
+      $success = true;
+      Session::flash('success', 'Libro archivado');
+      header('Location: books.php');
+      exit;
+    } else {
+      $message = 'No se pudo archivar el libro.';
+    }
+  }
+}
   }
 }
 ?>
@@ -68,10 +81,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   <?php endif; ?>
 
   <div class="card"><div class="card-body">
-    <p>¿Está seguro de eliminar el libro <strong><?= htmlspecialchars($book['title'] ?? '') ?></strong> (ID <?= (int)$book['id'] ?>)? Esta acción no se puede deshacer.</p>
+    <p>¿Está seguro de eliminar o archivar el libro <strong><?= htmlspecialchars($book['title'] ?? '') ?></strong> (ID <?= (int)$book['id'] ?>)?</p>
     <form method="post">
       <?= Session::csrfField() ?>
-      <button class="btn btn-danger" type="submit">Eliminar</button>
+      <?php if (\App\Middleware\AuthMiddleware::hasRole('admin')): ?>
+        <button class="btn btn-danger" type="submit" name="hard_delete" value="1">Eliminar definitivamente</button>
+      <?php endif; ?>
+      <button class="btn btn-warning" type="submit">Archivar</button>
       <a class="btn btn-secondary" href="books.php">Cancelar</a>
     </form>
   </div></div>

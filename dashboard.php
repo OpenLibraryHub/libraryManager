@@ -238,6 +238,9 @@ $overdueLoans = array_slice($loanModel->getOverdueLoans(), 0, 5);
                     <a class="nav-link" href="reports.php">
                         <i class="fas fa-chart-bar"></i> Reportes
                     </a>
+                     <a class="nav-link" href="due_soon.php">
+                         <i class="fas fa-clock"></i> Por vencer
+                     </a>
                 </nav>
             </div>
 
