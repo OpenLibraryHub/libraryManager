@@ -90,15 +90,16 @@ class UserController {
             'address' => 'string'
         ]);
         // Optional fields cleanup
-        if (empty($sanitized['phone'])) { unset($sanitized['phone']); }
-        if (empty($sanitized['address'])) { unset($sanitized['address']); }
-        if (empty($sanitized['phone'])) { unset($sanitized['phone']); }
+        if (!isset($data['email']) || $data['email'] === '') { unset($sanitized['email']); }
+        if (!isset($data['phone']) || $data['phone'] === '' || (int)$data['phone'] < 0) { unset($sanitized['phone']); }
+        if (!isset($data['address']) || $data['address'] === '') { unset($sanitized['address']); }
+        if (!isset($data['user_key']) || $data['user_key'] === '' || (int)$data['user_key'] < 1) { unset($sanitized['user_key']); }
         
         // Check if user already exists
         if ($this->userModel->userExists(
             $sanitized['email'] ?? '',
             $sanitized['id_number'] ?? 0,
-            $sanitized['user_key'] ?? 0,
+            $sanitized['user_key'] ?? null,
             $sanitized['phone'] ?? null
         )) {
             $response['message'] = 'El usuario ya existe (correo, cédula, llave o teléfono duplicado).';
@@ -112,7 +113,7 @@ class UserController {
             if ($newUser) {
                 AuthMiddleware::logActivity('user_create', [
                     'cedula' => $sanitized['id_number'],
-                    'email' => $sanitized['email']
+                    'email' => $sanitized['email'] ?? ''
                 ]);
                 
                 $response['success'] = true;
@@ -124,6 +125,9 @@ class UserController {
         } catch (Exception $e) {
             $response['message'] = 'Error al procesar la solicitud.';
             error_log('User creation error: ' . $e->getMessage());
+            \App\Middleware\AuthMiddleware::logActivity('user_create_error', [
+                'message' => $e->getMessage()
+            ]);
         }
         
         return $response;

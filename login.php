@@ -227,6 +227,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     Iniciar sesión
                 </button>
             </form>
+
+            <hr>
+            <h6 class="text-muted">Acceso de usuarios</h6>
+            <form method="POST" action="user_login.php" id="patronLogin">
+              <?= Session::csrfField() ?>
+              <div class="form-group">
+                <label for="id_number">Cédula</label>
+                <input type="number" name="id_number" class="form-control" required />
+              </div>
+              <div class="form-group">
+                <label for="user_key">Llave</label>
+                <input type="number" name="user_key" class="form-control" required />
+              </div>
+              <button type="submit" class="btn btn-outline-primary btn-login">Entrar</button>
+            </form>
             
             <div class="text-center mt-3">
                 <a href="forgot-password.php" class="text-muted" style="text-decoration: none; font-size: 14px;">

@@ -98,24 +98,31 @@ class User extends Model {
     /**
      * Check if user exists by email, id_number, or user_key
      */
-    public function userExists($email, $idNumber, $userKey, $phone = null): bool {
-        $sql = "SELECT 1 FROM {$this->table} 
-                WHERE email = ? OR id_number = ? OR user_key = ?";
-        
-        $params = [$email, $idNumber, $userKey];
-        $types = 'sii';
-        
-        // Solo considerar teléfono si viene con valor (>0)
+    public function userExists($email, $idNumber, $userKey = null, $phone = null): bool {
+        $conditions = [ 'id_number = ?' ];
+        $params = [ $idNumber ];
+        $types = 'i';
+
+        if ($email !== null && $email !== '') {
+            $conditions[] = 'email = ?';
+            $params[] = $email;
+            $types .= 's';
+        }
+
+        if ($userKey !== null && (string)$userKey !== '' && (int)$userKey > 0) {
+            $conditions[] = 'user_key = ?';
+            $params[] = (int)$userKey;
+            $types .= 'i';
+        }
+
         if ($phone !== null && (int)$phone > 0) {
-            $sql .= " OR phone = ?";
+            $conditions[] = 'phone = ?';
             $params[] = $phone;
             $types .= 'i';
         }
-        
-        $sql .= " LIMIT 1";
-        
+
+        $sql = "SELECT 1 FROM {$this->table} WHERE " . implode(' OR ', $conditions) . " LIMIT 1";
         $result = $this->db->queryOne($sql, $types, $params);
-        // null => no rows; array => found; false => query error (treat as not found)
         return is_array($result);
     }
     
@@ -230,18 +237,59 @@ class User extends Model {
         $rules = [
             'first_name' => 'required|min:2|max:100',
             'last_name' => 'required|min:2|max:100',
-            'email' => 'required|email|max:255',
+            'email' => 'email|max:255',
             'address' => 'max:100',
         ];
         
         if (!$isUpdate) {
             $rules['id_number'] = 'required|numeric|min:1';
-            $rules['user_key'] = 'required|numeric|min:1';
+            $rules['user_key'] = 'numeric';
             $rules['phone'] = 'numeric';
         }
         
         $validator->validate($data, $rules);
-        
-        return $validator->getErrors();
+        $errors = $validator->getErrors();
+
+        // Additional constraints on raw input strings
+        if (!$isUpdate) {
+            $idRaw = (string)($data['id_number'] ?? '');
+            $keyRaw = (string)($data['user_key'] ?? '');
+
+            // Positive numbers only
+            if ($idRaw !== '' && (int)$idRaw < 1) {
+                $errors['id_number'][] = 'Debe ser un número positivo.';
+            }
+            if ($keyRaw !== '' && (int)$keyRaw < 1) {
+                $errors['user_key'][] = 'Debe ser un número positivo.';
+            }
+
+            // Digits length and leading zero checks
+            $idDigits = preg_replace('/\D/', '', $idRaw);
+            if ($idDigits !== '') {
+                if (strlen($idDigits) <= 8) {
+                    $errors['id_number'][] = 'La cédula debe tener más de 8 dígitos.';
+                }
+                if ($idDigits[0] === '0') {
+                    $errors['id_number'][] = 'La cédula no puede iniciar con 0.';
+                }
+            }
+
+            $keyDigits = preg_replace('/\D/', '', $keyRaw);
+            if ($keyDigits !== '') {
+                if (strlen($keyDigits) !== 12) {
+                    $errors['user_key'][] = 'La llave debe tener 12 dígitos.';
+                }
+                if ($keyDigits[0] === '0') {
+                    $errors['user_key'][] = 'La llave no puede iniciar con 0.';
+                }
+            }
+
+            // Phone non-negative if provided
+            if (isset($data['phone']) && $data['phone'] !== '' && (int)$data['phone'] < 0) {
+                $errors['phone'][] = 'No puede ser negativo.';
+            }
+        }
+
+        return $errors;
     }
 }

@@ -14,17 +14,50 @@ $bookModel = new Book();
 
 $message = '';
 $success = false;
+$selectedBook = (int)($_GET['book_id'] ?? 0);
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   if (!Session::verifyCsrfToken($_POST['csrf_token'] ?? '')) {
     $message = 'Token inválido';
   } else {
+    // Cancel hold
+    if (isset($_POST['cancel_hold'], $_POST['hold_id'])) {
+      $hid = (int)$_POST['hold_id'];
+      if ($hid > 0) {
+        if ((new Hold())->cancelHold($hid)) {
+          $success = true;
+          $message = 'Solicitud cancelada.';
+        } else {
+          $message = 'No se pudo cancelar la solicitud.';
+        }
+      }
+    } elseif (isset($_POST['fulfill_hold'], $_POST['hold_id'])) {
+      // Fulfill now: create loan immediately
+      $hid = (int)$_POST['hold_id'];
+      $hold = (new Hold())->find($hid);
+      if ($hold) {
+        try {
+          $ok = (new \App\Models\Loan())->createLoan((int)$hold['book_id'], (int)$hold['user_id'], 'Cumplido desde lista de espera', 15);
+          if ($ok) {
+            (new Hold())->markFulfilled($hid);
+            $success = true;
+            $message = 'Cumplida y préstamo creado.';
+          } else {
+            $message = 'No se pudo crear el préstamo.';
+          }
+        } catch (\Exception $e) {
+          $message = 'Error: ' . htmlspecialchars($e->getMessage());
+        }
+      }
+    } else {
     $bookId = (int)($_POST['book_id'] ?? 0);
     $userId = (int)($_POST['user_id'] ?? 0);
     if ($bookId && $userId) {
       $book = $bookModel->find($bookId);
       if (!$book) {
         $message = 'Libro no encontrado.';
+      } elseif ((int)($book['copies_total'] ?? 0) === 0 || \App\Models\Book::isArchivedRow($book)) {
+        $message = 'El libro está archivado/eliminado y no admite lista de espera.';
       } elseif ((int)($book['copies_available'] ?? 0) > 0) {
         $message = 'Hay ejemplares disponibles. Realiza el préstamo desde la sección Préstamos.';
       } elseif ($holdModel->userHasHold($bookId, $userId)) {
@@ -40,11 +73,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } else {
       $message = 'Datos inválidos';
     }
+    }
   }
 }
 
-$books = $bookModel->all();
-$queued = $holdModel->listHolds('queued');
+$books = $bookModel->getWaitlistEligibleBooks();
+$queued = $holdModel->listHolds('queued', $selectedBook ?: null);
 $fulfilled = $holdModel->listHolds('fulfilled');
 $canceled = $holdModel->listHolds('canceled');
 ?>
@@ -56,20 +90,40 @@ $canceled = $holdModel->listHolds('canceled');
   <title>Lista de espera</title>
   <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
   <?= Session::csrfMeta() ?>
+  <style>
+    html, body { overflow-x: hidden; }
+    .table-responsive { overflow-x: auto; }
+    .table td, .table th { white-space: normal; word-break: break-word; }
+    /* Match width of all sections */
+    .narrow-card { max-width: 860px; margin-left: auto; margin-right: auto; }
+  </style>
 </head>
 <body class="bg-light">
 <div class="container py-4">
-  <div class="d-flex justify-content-between align-items-center mb-3">
+  <div class="position-relative mb-3 narrow-card">
     <h3 class="mb-0">Lista de espera</h3>
-    <div>
+    <div class="position-absolute" style="right:0; top:0;">
       <a href="dashboard.php" class="btn btn-outline-dark mr-2">Dashboard</a>
       <a href="books.php" class="btn btn-outline-secondary">Libros</a>
     </div>
   </div>
+  <form method="get" class="mb-3 narrow-card">
+    <div class="form-row">
+      <div class="col-md-6">
+        <label class="small text-muted d-block">Filtrar por libro</label>
+        <select class="form-control" name="book_id" onchange="this.form.submit()">
+          <option value="0">Todos</option>
+          <?php foreach ($books as $b): $sel = $selectedBook===(int)$b['id']?'selected':''; ?>
+            <option value="<?= (int)$b['id'] ?>" <?= $sel ?>><?= htmlspecialchars(($b['title'] ?? '') . ' - ' . ($b['author'] ?? '')) ?></option>
+          <?php endforeach; ?>
+        </select>
+      </div>
+    </div>
+  </form>
   <?php if ($message): ?>
-    <div class="alert <?= $success ? 'alert-success':'alert-danger' ?>"><?= htmlspecialchars($message) ?></div>
+    <div class="alert <?= $success ? 'alert-success':'alert-danger' ?> narrow-card"><?= htmlspecialchars($message) ?></div>
   <?php endif; ?>
-  <div class="card"><div class="card-body">
+  <div class="card narrow-card mx-auto"><div class="card-body">
     <h5 class="card-title">Crear solicitud</h5>
     <form method="post">
       <?= Session::csrfField() ?>
@@ -92,7 +146,8 @@ $canceled = $holdModel->listHolds('canceled');
   </div></div>
 </div>
 
-<div class="card mt-3"><div class="card-body">
+<div class="container py-0">
+<div class="card mt-3 narrow-card mx-auto"><div class="card-body">
   <h5 class="card-title">Solicitudes en espera</h5>
   <div class="table-responsive">
     <table class="table table-sm table-striped mb-0">
@@ -104,8 +159,14 @@ $canceled = $holdModel->listHolds('canceled');
             <td><?= htmlspecialchars(($h['first_name'] ?? '') . ' ' . ($h['last_name'] ?? '')) ?></td>
             <td><?= htmlspecialchars((string)$h['id_number']) ?></td>
             <td><?= htmlspecialchars($h['created_at'] ?? '') ?></td>
-            <td>
-              <form method="post" onsubmit="return confirm('¿Cancelar solicitud?')">
+            <td class="text-nowrap">
+              <form method="post" class="d-inline" onsubmit="return confirm('¿Cumplir y crear préstamo?')">
+                <?= Session::csrfField() ?>
+                <input type="hidden" name="fulfill_hold" value="1" />
+                <input type="hidden" name="hold_id" value="<?= (int)$h['id'] ?>" />
+                <button class="btn btn-sm btn-success" type="submit">Cumplir</button>
+              </form>
+              <form method="post" class="d-inline" onsubmit="return confirm('¿Cancelar solicitud?')">
                 <?= Session::csrfField() ?>
                 <input type="hidden" name="cancel_hold" value="1" />
                 <input type="hidden" name="hold_id" value="<?= (int)$h['id'] ?>" />
@@ -122,29 +183,26 @@ $canceled = $holdModel->listHolds('canceled');
   </div>
 </div></div>
 
-<div class="row mt-3">
-  <div class="col-md-6">
-    <div class="card"><div class="card-body">
-      <h6 class="card-title">Cumplidas</h6>
-      <ul class="mb-0">
-        <?php foreach ($fulfilled as $h): ?>
-          <li><?= htmlspecialchars(($h['title'] ?? '') . ' - ' . ($h['first_name'] ?? '') . ' ' . ($h['last_name'] ?? '')) ?> (<?= htmlspecialchars($h['fulfilled_at'] ?? '') ?>)</li>
-        <?php endforeach; ?>
-        <?php if (empty($fulfilled)): ?><li class="text-muted">Sin datos</li><?php endif; ?>
-      </ul>
-    </div></div>
-  </div>
-  <div class="col-md-6">
-    <div class="card"><div class="card-body">
-      <h6 class="card-title">Canceladas</h6>
-      <ul class="mb-0">
-        <?php foreach ($canceled as $h): ?>
-          <li><?= htmlspecialchars(($h['title'] ?? '') . ' - ' . ($h['first_name'] ?? '') . ' ' . ($h['last_name'] ?? '')) ?> (<?= htmlspecialchars($h['canceled_at'] ?? '') ?>)</li>
-        <?php endforeach; ?>
-        <?php if (empty($canceled)): ?><li class="text-muted">Sin datos</li><?php endif; ?>
-      </ul>
-    </div></div>
-  </div>
+<div class="card mt-3 narrow-card mx-auto"><div class="card-body">
+  <h6 class="card-title">Cumplidas</h6>
+  <ul class="mb-0">
+    <?php foreach ($fulfilled as $h): ?>
+      <li><?= htmlspecialchars(($h['title'] ?? '') . ' - ' . ($h['first_name'] ?? '') . ' ' . ($h['last_name'] ?? '')) ?> (<?= htmlspecialchars($h['fulfilled_at'] ?? '') ?>)</li>
+    <?php endforeach; ?>
+    <?php if (empty($fulfilled)): ?><li class="text-muted">Sin datos</li><?php endif; ?>
+  </ul>
+</div></div>
+
+<div class="card mt-3 narrow-card mx-auto"><div class="card-body">
+  <h6 class="card-title">Canceladas</h6>
+  <ul class="mb-0">
+    <?php foreach ($canceled as $h): ?>
+      <li><?= htmlspecialchars(($h['title'] ?? '') . ' - ' . ($h['first_name'] ?? '') . ' ' . ($h['last_name'] ?? '')) ?> (<?= htmlspecialchars($h['canceled_at'] ?? '') ?>)</li>
+    <?php endforeach; ?>
+    <?php if (empty($canceled)): ?><li class="text-muted">Sin datos</li><?php endif; ?>
+  </ul>
+</div></div>
+
 </div>
 
 <script>

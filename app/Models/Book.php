@@ -211,6 +211,18 @@ class Book extends Model {
     }
 
     /**
+     * Books eligible for waitlist: unavailable (0 copies) and not archived/deleted (copies_total > 0 and notes not prefixed)
+     */
+    public function getWaitlistEligibleBooks(): array {
+        $sql = "SELECT * FROM {$this->table}
+                WHERE copies_total > 0
+                  AND copies_available = 0
+                  AND (notes IS NULL OR notes NOT LIKE '[ARCHIVED]%')
+                ORDER BY title ASC";
+        return $this->db->query($sql) ?: [];
+    }
+
+    /**
      * Update core book fields (admin)
      */
     public function updateBook(int $id, array $data): bool {
@@ -342,20 +354,46 @@ class Book extends Model {
      */
     public function createBook(array $data) {
         // Accept English keys directly
+        // Coerce numeric FKs safely (null if non-numeric or <= 0)
+        $toNullablePositiveInt = function($value) {
+            if ($value === null || $value === '') { return null; }
+            if (!is_numeric($value)) { return null; }
+            $iv = (int)$value;
+            return $iv > 0 ? $iv : null;
+        };
+
         $payload = [
             'isbn' => $data['isbn'] ?? null,
             'title' => $data['title'] ?? null,
             'author' => $data['author'] ?? null,
-            'classification_id' => isset($data['classification_id']) ? (int)$data['classification_id'] : null,
+            'classification_id' => $toNullablePositiveInt($data['classification_id'] ?? null),
             'classification_code' => $data['classification_code'] ?? null,
             'copies_total' => isset($data['copies_total']) ? (int)$data['copies_total'] : null,
-            'origin_id' => isset($data['origin_id']) ? (int)$data['origin_id'] : null,
+            'origin_id' => $toNullablePositiveInt($data['origin_id'] ?? null),
             'copies_available' => isset($data['copies_available']) ? (int)$data['copies_available'] : (isset($data['copies_total']) ? (int)$data['copies_total'] : 0),
-            'label_id' => ($data['label_id'] ?? '') === '' ? null : (int)$data['label_id'],
+            'label_id' => $toNullablePositiveInt($data['label_id'] ?? null),
             'library_id' => $data['library_id'] ?? 683070001001,
-            'room_id' => isset($data['room_id']) ? (int)$data['room_id'] : null,
+            'room_id' => $toNullablePositiveInt($data['room_id'] ?? null),
             'notes' => $data['notes'] ?? null,
         ];
+
+        // Verify FK existence; set to NULL if not found to avoid FK violation
+        if ($payload['classification_id'] !== null) {
+            $exists = $this->db->queryOne('SELECT 1 FROM classifications WHERE classification_id = ? LIMIT 1', 'i', [$payload['classification_id']]);
+            if ($exists === null) { $payload['classification_id'] = null; }
+        }
+        if ($payload['origin_id'] !== null) {
+            $exists = $this->db->queryOne('SELECT 1 FROM origins WHERE origin_id = ? LIMIT 1', 'i', [$payload['origin_id']]);
+            if ($exists === null) { $payload['origin_id'] = null; }
+        }
+        if ($payload['label_id'] !== null) {
+            $exists = $this->db->queryOne('SELECT 1 FROM labels WHERE label_id = ? LIMIT 1', 'i', [$payload['label_id']]);
+            if ($exists === null) { $payload['label_id'] = null; }
+        }
+        if ($payload['room_id'] !== null) {
+            $exists = $this->db->queryOne('SELECT 1 FROM rooms WHERE room_id = ? LIMIT 1', 'i', [$payload['room_id']]);
+            if ($exists === null) { $payload['room_id'] = null; }
+        }
         return $this->create($payload);
     }
     
@@ -375,9 +413,9 @@ class Book extends Model {
             'room_id' => 'integer',
         ];
         
-        // ISBN is optional but if provided validate format
+        // ISBN is optional; allow up to 32 chars (strict checksum not required)
         if (isset($data['isbn']) && $data['isbn'] !== null && $data['isbn'] !== '') {
-            $rules['isbn'] = 'isbn';
+            $rules['isbn'] = 'max:32';
         }
         
         if (isset($data['classification_code']) && !empty($data['classification_code'])) {
@@ -397,9 +435,10 @@ class Book extends Model {
         }
         
         // Uniqueness check for ISBN when provided; skip if blank
-        if (!$isUpdate && isset($data['isbn']) && $data['isbn'] !== null && $data['isbn'] !== '') {
-            if ($this->isbnExists($data['isbn'])) {
-                $errors['isbn'][] = 'This ISBN already exists.';
+        if (isset($data['isbn']) && $data['isbn'] !== null && $data['isbn'] !== '') {
+            $excludeId = $isUpdate ? ($data['id'] ?? null) : null;
+            if ($this->isbnExists($data['isbn'], $excludeId)) {
+                $errors['isbn'][] = 'Este ISBN ya existe.';
             }
         }
         

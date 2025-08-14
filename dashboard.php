@@ -33,6 +33,8 @@ $loanStats = $loanModel->getStatistics();
 // Get recent activities
 $recentLoans = array_slice($loanModel->getActiveLoans(), 0, 5);
 $overdueLoans = array_slice($loanModel->getOverdueLoans(), 0, 5);
+$recentReturns = array_slice($loanModel->getReturnedLoans(), 0, 5);
+$dueSoonLoans = array_slice($loanModel->getDueSoonLoans(3), 0, 5);
 
 ?>
 <!DOCTYPE html>
@@ -374,44 +376,57 @@ $overdueLoans = array_slice($loanModel->getOverdueLoans(), 0, 5);
                     </div>
                 </div>
 
-                <!-- Security Status -->
+                <!-- Recently Returned Books -->
                 <div class="row mt-4">
-                    <div class="col-md-12">
+                    <div class="col-md-6">
                         <div class="table-card">
-                            <h5><i class="fas fa-shield-alt text-success"></i> Estado de Seguridad</h5>
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <ul class="list-group">
-                                        <li class="list-group-item d-flex justify-content-between align-items-center">
-                                            SQL Injection Protection
-                                            <span class="badge bg-success">✓ Activo</span>
-                                        </li>
-                                        <li class="list-group-item d-flex justify-content-between align-items-center">
-                                            XSS Protection
-                                            <span class="badge bg-success">✓ Activo</span>
-                                        </li>
-                                        <li class="list-group-item d-flex justify-content-between align-items-center">
-                                            CSRF Protection
-                                            <span class="badge bg-success">✓ Activo</span>
-                                        </li>
-                                    </ul>
-                                </div>
-                                <div class="col-md-6">
-                                    <ul class="list-group">
-                                        <li class="list-group-item d-flex justify-content-between align-items-center">
-                                            Password Encryption
-                                            <span class="badge bg-success">✓ Bcrypt</span>
-                                        </li>
-                                        <li class="list-group-item d-flex justify-content-between align-items-center">
-                                            Session Security
-                                            <span class="badge bg-success">✓ Seguro</span>
-                                        </li>
-                                        <li class="list-group-item d-flex justify-content-between align-items-center">
-                                            Input Validation
-                                            <span class="badge bg-success">✓ Activo</span>
-                                        </li>
-                                    </ul>
-                                </div>
+                            <h5><i class="fas fa-undo"></i> Libros devueltos recientemente</h5>
+                            <div class="table-responsive">
+                                <table class="table">
+                                    <thead>
+                                        <tr>
+                                            <th>Libro</th>
+                                            <th>Usuario</th>
+                                            <th>Fecha</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <?php foreach ($recentReturns as $loan): ?>
+                                        <tr>
+                                            <td><?= Validator::escape($loan['title'] ?? '') ?></td>
+                                            <td><?= Validator::escape(trim(($loan['first_name'] ?? '') . ' ' . ($loan['last_name'] ?? ''))) ?></td>
+                                            <td><?= isset($loan['returned_at']) ? date('d/m/Y', strtotime($loan['returned_at'])) : '-' ?></td>
+                                        </tr>
+                                        <?php endforeach; ?>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="table-card">
+                            <h5><i class="fas fa-hourglass-half"></i> Próximos a vencer (3 días)</h5>
+                            <div class="table-responsive">
+                                <table class="table">
+                                    <thead>
+                                        <tr>
+                                            <th>Libro</th>
+                                            <th>Usuario</th>
+                                            <th>Fecha límite</th>
+                                            <th>Días</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <?php foreach ($dueSoonLoans as $loan): ?>
+                                        <tr>
+                                            <td><?= Validator::escape($loan['title'] ?? '') ?></td>
+                                            <td><?= Validator::escape(trim(($loan['first_name'] ?? '') . ' ' . ($loan['last_name'] ?? ''))) ?></td>
+                                            <td><?= isset($loan['due_at']) ? date('d/m/Y', strtotime($loan['due_at'])) : '-' ?></td>
+                                            <td><span class="badge badge-warning"><?= (int)($loan['days_left'] ?? 0) ?></span></td>
+                                        </tr>
+                                        <?php endforeach; ?>
+                                    </tbody>
+                                </table>
                             </div>
                         </div>
                     </div>

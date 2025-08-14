@@ -55,15 +55,22 @@ class Hold extends Model {
     /**
      * List holds (default queued) with book and user details
      */
-    public function listHolds(string $status = 'queued'): array {
+    public function listHolds(string $status = 'queued', ?int $bookId = null): array {
         $status = in_array($status, ['queued','fulfilled','canceled'], true) ? $status : 'queued';
+        $params = [$status];
+        $types = 's';
         $sql = "SELECT h.*, b.title, b.author, u.first_name, u.last_name, u.id_number
                 FROM {$this->table} h
                 INNER JOIN books b ON b.id = h.book_id
                 INNER JOIN users u ON u.id_number = h.user_id
-                WHERE h.status = ?
-                ORDER BY h.created_at ASC";
-        return $this->db->query($sql, 's', [$status]) ?: [];
+                WHERE h.status = ?";
+        if ($bookId !== null && $bookId > 0) {
+            $sql .= " AND h.book_id = ?";
+            $params[] = $bookId;
+            $types .= 'i';
+        }
+        $sql .= " ORDER BY h.created_at ASC";
+        return $this->db->query($sql, $types, $params) ?: [];
     }
 }
 

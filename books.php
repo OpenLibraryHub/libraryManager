@@ -16,10 +16,12 @@ $field = $_GET['field'] ?? 'all';
 
 $bookModel = new Book();
 if ($q !== '') {
-  $books = $bookModel->searchBooks($q, $field, $onlyAvailable);
-  $total = count($books);
-  $pages = 1;
-  $page = 1;
+  $allMatches = $bookModel->searchBooks($q, $field, $onlyAvailable);
+  $total = count($allMatches);
+  $pages = max(1, (int)ceil($total / $perPage));
+  $page = min($page, $pages);
+  $offset = ($page - 1) * $perPage;
+  $books = array_slice($allMatches, $offset, $perPage);
 } else {
   $total = $bookModel->countAll($onlyAvailable);
   $pages = max(1, (int)ceil($total / $perPage));
@@ -117,7 +119,18 @@ if ($q !== '') {
           </tr>
         <?php endforeach; ?>
         <?php if (empty($books)): ?>
-          <tr><td colspan="7" class="text-center text-muted">No hay libros</td></tr>
+          <tr>
+            <td colspan="8" class="text-center p-5">
+              <div class="d-inline-block text-center">
+                <h5 class="text-muted mb-3">
+                  <?= $q !== '' ? 'Sin resultados' : 'No hay libros' ?>
+                </h5>
+                <a href="books_create.php" class="btn btn-success btn-lg">
+                  Crear libro
+                </a>
+              </div>
+            </td>
+          </tr>
         <?php endif; ?>
         </tbody>
       </table>

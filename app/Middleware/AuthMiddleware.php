@@ -36,6 +36,15 @@ class AuthMiddleware {
             }
             return false;
         }
+
+        // Block patrons from staff-only middleware
+        $role = Session::get('user_role', 'librarian');
+        if ($role === 'patron') {
+            if ($redirect) {
+                self::redirectToLogin();
+            }
+            return false;
+        }
         
         return true;
     }

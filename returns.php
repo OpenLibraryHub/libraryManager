@@ -139,17 +139,27 @@ $loans = $q !== '' ? $loanModel->searchLoans($q, $field, $activeOnly) : ($active
             <td><?= htmlspecialchars((string)($l['due_at'] ?? '')) ?></td>
             <?php if(!$activeOnly): ?><td><?= htmlspecialchars((string)($l['returned_at'] ?? '')) ?></td><?php endif; ?>
             <td>
-              <form method="post" class="mb-0">
-                <?= Session::csrfField() ?>
-                <input type="hidden" name="action" value="return" />
-                <input type="hidden" name="loan_id" value="<?= (int)($l['loan_id'] ?? 0) ?>" />
-                <button class="btn btn-sm btn-success" type="submit">Marcar devuelto</button>
-              </form>
+              <?php if ((int)($l['returned'] ?? 0) === 0): ?>
+                <form id="returnForm_<?= (int)($l['loan_id'] ?? 0) ?>" method="post" class="mb-0">
+                  <?= Session::csrfField() ?>
+                  <input type="hidden" name="action" value="return" />
+                  <input type="hidden" name="loan_id" value="<?= (int)($l['loan_id'] ?? 0) ?>" />
+                  <button type="button"
+                          class="btn btn-sm btn-success open-return-modal"
+                          data-loan-id="<?= (int)($l['loan_id'] ?? 0) ?>"
+                          data-book="<?= htmlspecialchars((string)($l['title'] ?? '')) ?><?= ($l['author'] ?? '') !== '' ? ' — ' . htmlspecialchars((string)$l['author']) : '' ?>"
+                          data-user="<?= htmlspecialchars(trim((string)($l['first_name'] ?? '') . ' ' . (string)($l['last_name'] ?? ''))) ?><?= isset($l['id_number']) ? ' (' . htmlspecialchars((string)$l['id_number']) . ')' : '' ?>">
+                    Marcar devuelto
+                  </button>
+                </form>
+              <?php else: ?>
+                <span class="badge badge-secondary">Devuelto</span>
+              <?php endif; ?>
             </td>
           </tr>
         <?php endforeach; ?>
         <?php if (empty($loans)): ?>
-          <tr><td colspan="6" class="text-center text-muted">Sin préstamos activos</td></tr>
+          <tr><td colspan="<?= $activeOnly ? 6 : 7 ?>" class="text-center text-muted"><?= $activeOnly ? 'Sin préstamos activos' : 'Sin préstamos devueltos' ?></td></tr>
         <?php endif; ?>
         </tbody>
       </table>
@@ -158,3 +168,57 @@ $loans = $q !== '' ? $loanModel->searchLoans($q, $field, $activeOnly) : ($active
 </div>
 </body>
 </html>
+<div class="modal fade" id="confirmReturnModal" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Confirmar devolución</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <p class="mb-1 text-muted small">Libro</p>
+        <div id="confirmReturnBook" class="font-weight-bold mb-2"></div>
+        <p class="mb-1 text-muted small">Usuario</p>
+        <div id="confirmReturnUser" class="mb-3"></div>
+        <div class="alert alert-info mb-0">¿El libro fue entregado?</div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" data-dismiss="modal">No</button>
+        <button type="button" class="btn btn-success" id="confirmReturnYes">Sí</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@4.5.2/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+  document.addEventListener('DOMContentLoaded', function(){
+    var currentLoanId = null;
+    var buttons = document.querySelectorAll('.open-return-modal');
+    buttons.forEach(function(btn){
+      btn.addEventListener('click', function(){
+        currentLoanId = this.getAttribute('data-loan-id');
+        document.getElementById('confirmReturnBook').textContent = this.getAttribute('data-book') || '';
+        document.getElementById('confirmReturnUser').textContent = this.getAttribute('data-user') || '';
+        if (window.jQuery && jQuery.fn.modal) {
+          jQuery('#confirmReturnModal').modal('show');
+        } else if (typeof bootstrap !== 'undefined') {
+          var el = document.getElementById('confirmReturnModal');
+          if (el) { new bootstrap.Modal(el).show(); }
+        }
+      });
+    });
+
+    var yesBtn = document.getElementById('confirmReturnYes');
+    if (yesBtn) {
+      yesBtn.addEventListener('click', function(){
+        if (!currentLoanId) return;
+        var form = document.getElementById('returnForm_' + currentLoanId);
+        if (form) form.submit();
+      });
+    }
+  });
+</script>

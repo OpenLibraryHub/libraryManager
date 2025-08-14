@@ -15,7 +15,7 @@ $errors = [];
 $q = trim((string)($_GET['q'] ?? ''));
 $field = $_GET['field'] ?? 'all';
 $activeOnly = ($_GET['active'] ?? '1') === '1';
-
+// Here the loan is created
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'create') {
     if (!Session::verifyCsrfToken($_POST['csrf_token'] ?? '')) {
         $message = 'Token inválido';

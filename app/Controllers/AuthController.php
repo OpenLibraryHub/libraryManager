@@ -8,6 +8,7 @@
 namespace App\Controllers;
 
 use App\Models\Librarian;
+use App\Models\User as Patron;
 use App\Helpers\Session;
 use App\Helpers\Validator;
 use App\Middleware\AuthMiddleware;
@@ -48,6 +49,7 @@ class AuthController {
         if ($librarian) {
             // Login successful
             Session::login($librarian);
+            Session::set('user_role', 'librarian');
             // Ensure detailed profile fields are present in session for profile/settings pages
             Session::set('user_email', $librarian['email'] ?? '');
             Session::set('user_name', $librarian['first_name'] ?? '');
@@ -69,6 +71,50 @@ class AuthController {
             $response['message'] = 'Credenciales incorrectas.';
         }
         
+        return $response;
+    }
+
+    /**
+     * Patron login via users table (id_number + user_key)
+     */
+    public function patronLogin(array $data): array {
+        $response = ['success' => false, 'message' => '', 'errors' => []];
+
+        $validator = new Validator();
+        $rules = [
+            'id_number' => 'required|numeric',
+            'user_key' => 'required|numeric',
+        ];
+        if (!$validator->validate($data, $rules)) {
+            $response['errors'] = $validator->getErrors();
+            $response['message'] = 'Por favor, corrija los errores en el formulario.';
+            return $response;
+        }
+
+        $idNumber = (int)$data['id_number'];
+        $userKey = (int)$data['user_key'];
+
+        $patronModel = new Patron();
+        $patron = $patronModel->find($idNumber);
+
+        if (!$patron || (int)$patron['user_key'] !== $userKey) {
+            $response['message'] = 'Credenciales incorrectas.';
+            return $response;
+        }
+
+        // Start session for patron using same keys used by staff
+        Session::start();
+        Session::set('user_id', (int)$patron['id_number']);
+        Session::set('user_email', $patron['email'] ?? '');
+        Session::set('user_name', $patron['first_name'] ?? '');
+        Session::set('user_lastname', $patron['last_name'] ?? '');
+        Session::set('user_role', 'patron');
+        Session::set('login_time', time());
+        Session::set('last_activity', time());
+
+        $response['success'] = true;
+        $response['message'] = 'Inicio de sesión exitoso.';
+        $response['redirect'] = '/library/account.php';
         return $response;
     }
     

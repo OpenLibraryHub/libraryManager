@@ -21,11 +21,35 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'creat
   if (!Session::verifyCsrfToken($_POST['csrf_token'] ?? '')) {
     $createMessage = 'Token inválido';
   } else {
-    $controller = new UserController();
-    $res = $controller->create($_POST);
-    $createMessage = $res['message'] ?? '';
-    $createSuccess = (bool)($res['success'] ?? false);
-    $createErrors = $res['errors'] ?? [];
+    // Extra server-side guards: optional fields (email, phone, address); numbers must be non-negative
+    $payload = $_POST;
+    $localErrors = [];
+    $idVal = isset($payload['id_number']) ? (int)$payload['id_number'] : null;
+    $keyVal = isset($payload['user_key']) && $payload['user_key'] !== '' ? (int)$payload['user_key'] : null;
+    $phoneVal = ($payload['phone'] ?? '') !== '' ? (int)$payload['phone'] : null;
+    if ($idVal === null || $idVal < 1) { $localErrors['id_number'][] = 'Debe ser un número positivo.'; }
+    if ($keyVal !== null && $keyVal < 1) { $localErrors['user_key'][] = 'Debe ser un número positivo.'; }
+    // Length and leading-zero constraints (UI-level)
+    $idDigits = preg_replace('/\D/', '', (string)($payload['id_number'] ?? ''));
+    if ($idDigits === '' || strlen($idDigits) <= 8) { $localErrors['id_number'][] = 'Debe tener más de 8 dígitos.'; }
+    if ($idDigits !== '' && $idDigits[0] === '0') { $localErrors['id_number'][] = 'No puede iniciar con 0.'; }
+    $keyDigits = preg_replace('/\D/', '', (string)($payload['user_key'] ?? ''));
+    if ($keyDigits !== '' && strlen($keyDigits) !== 12) { $localErrors['user_key'][] = 'Debe tener 12 dígitos.'; }
+    if ($keyDigits !== '' && $keyDigits[0] === '0') { $localErrors['user_key'][] = 'No puede iniciar con 0.'; }
+    if ($phoneVal !== null && $phoneVal < 0) { $localErrors['phone'][] = 'No puede ser negativo.'; }
+    if (trim((string)($payload['first_name'] ?? '')) === '') { $localErrors['first_name'][] = 'Requerido.'; }
+    if (trim((string)($payload['last_name'] ?? '')) === '') { $localErrors['last_name'][] = 'Requerido.'; }
+
+    if (!empty($localErrors)) {
+      $createMessage = 'Revise el formulario.';
+      $createErrors = $localErrors;
+    } else {
+      $controller = new UserController();
+      $res = $controller->create($_POST);
+      $createMessage = $res['message'] ?? '';
+      $createSuccess = (bool)($res['success'] ?? false);
+      $createErrors = $res['errors'] ?? [];
+    }
   }
 }
 
@@ -89,22 +113,22 @@ foreach ($activeLoans as $l) {
       <input type="hidden" name="action" value="create" />
       <div class="form-row">
         <div class="form-group col-md-3">
-          <label>Cédula</label>
-          <input type="number" name="id_number" class="form-control <?= isset($createErrors['id_number']) ? 'is-invalid' : '' ?>" value="<?= htmlspecialchars($_POST['id_number'] ?? '') ?>" required />
+          <label>Cédula*</label>
+          <input type="number" name="id_number" min="1" inputmode="numeric" pattern="[0-9]*" class="form-control <?= isset($createErrors['id_number']) ? 'is-invalid' : '' ?>" value="<?= htmlspecialchars($_POST['id_number'] ?? '') ?>" required />
           <?php if (isset($createErrors['id_number'])): ?><div class="invalid-feedback"><?= htmlspecialchars($createErrors['id_number'][0]) ?></div><?php endif; ?>
         </div>
         <div class="form-group col-md-3">
           <label>Llave</label>
-          <input type="number" name="user_key" class="form-control <?= isset($createErrors['user_key']) ? 'is-invalid' : '' ?>" value="<?= htmlspecialchars($_POST['user_key'] ?? '') ?>" required />
+          <input type="number" name="user_key" min="1" inputmode="numeric" pattern="[0-9]{12}" class="form-control <?= isset($createErrors['user_key']) ? 'is-invalid' : '' ?>" value="<?= htmlspecialchars($_POST['user_key'] ?? '') ?>" />
           <?php if (isset($createErrors['user_key'])): ?><div class="invalid-feedback"><?= htmlspecialchars($createErrors['user_key'][0]) ?></div><?php endif; ?>
         </div>
         <div class="form-group col-md-3">
-          <label>Nombre</label>
+          <label>Nombre*</label>
           <input name="first_name" class="form-control <?= isset($createErrors['first_name']) ? 'is-invalid' : '' ?>" value="<?= htmlspecialchars($_POST['first_name'] ?? '') ?>" required />
           <?php if (isset($createErrors['first_name'])): ?><div class="invalid-feedback"><?= htmlspecialchars($createErrors['first_name'][0]) ?></div><?php endif; ?>
         </div>
         <div class="form-group col-md-3">
-          <label>Apellido</label>
+          <label>Apellido*</label>
           <input name="last_name" class="form-control <?= isset($createErrors['last_name']) ? 'is-invalid' : '' ?>" value="<?= htmlspecialchars($_POST['last_name'] ?? '') ?>" required />
           <?php if (isset($createErrors['last_name'])): ?><div class="invalid-feedback"><?= htmlspecialchars($createErrors['last_name'][0]) ?></div><?php endif; ?>
         </div>
@@ -112,12 +136,12 @@ foreach ($activeLoans as $l) {
       <div class="form-row">
         <div class="form-group col-md-4">
           <label>Correo</label>
-          <input type="email" name="email" class="form-control <?= isset($createErrors['email']) ? 'is-invalid' : '' ?>" value="<?= htmlspecialchars($_POST['email'] ?? '') ?>" required />
+          <input type="email" name="email" class="form-control <?= isset($createErrors['email']) ? 'is-invalid' : '' ?>" value="<?= htmlspecialchars($_POST['email'] ?? '') ?>" />
           <?php if (isset($createErrors['email'])): ?><div class="invalid-feedback"><?= htmlspecialchars($createErrors['email'][0]) ?></div><?php endif; ?>
         </div>
         <div class="form-group col-md-4">
           <label>Teléfono</label>
-          <input type="number" name="phone" class="form-control <?= isset($createErrors['phone']) ? 'is-invalid' : '' ?>" value="<?= htmlspecialchars($_POST['phone'] ?? '') ?>" />
+          <input type="number" name="phone" min="0" class="form-control <?= isset($createErrors['phone']) ? 'is-invalid' : '' ?>" value="<?= htmlspecialchars($_POST['phone'] ?? '') ?>" />
           <?php if (isset($createErrors['phone'])): ?><div class="invalid-feedback"><?= htmlspecialchars($createErrors['phone'][0]) ?></div><?php endif; ?>
         </div>
         <div class="form-group col-md-4">

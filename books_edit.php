@@ -6,8 +6,9 @@ use App\Helpers\Session;
 use App\Models\Book;
 
 AuthMiddleware::require();
-if (!\App\Middleware\AuthMiddleware::hasRole('admin')) { http_response_code(403); die('No autorizado'); }
 Session::start();
+
+// Normal processing
 
 $bookModel = new Book();
 $id = (int)($_GET['id'] ?? 0);
@@ -20,21 +21,57 @@ if (!$book) {
 $message = '';
 $success = false;
 
+// Load reference lists before handling POST (used for validation/defaults)
+$classifications = $bookModel->getClassifications();
+$origins = $bookModel->getOrigins();
+$labels = $bookModel->getLabels();
+$rooms = $bookModel->getRooms();
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   if (!Session::verifyCsrfToken($_POST['csrf_token'] ?? '')) {
     $message = 'Token inválido';
   } else {
+    // Compute default "absence" IDs using the first option from each list (string-safe)
+    $defaultClassificationId = isset($classifications[0]['id']) ? (string)$classifications[0]['id'] : null;
+    $defaultOriginId = isset($origins[0]['id']) ? (string)$origins[0]['id'] : null;
+    $defaultLabelId = isset($labels[0]['id']) ? (string)$labels[0]['id'] : null;
+    $defaultRoomId = isset($rooms[0]['id']) ? (string)$rooms[0]['id'] : null;
+
+    $strOrDefault = function (string $key, ?string $default) {
+      $raw = (string)($_POST[$key] ?? '');
+      return $raw === '' ? $default : $raw;
+    };
+
     $payload = [
-      'isbn' => $_POST['isbn'] ?? null,
+      'id' => $id,
+      'isbn' => ($_POST['isbn'] ?? '') === '' ? null : $_POST['isbn'],
       'title' => $_POST['title'] ?? '',
-      'author' => $_POST['author'] ?? '',
-      'classification_id' => isset($_POST['classification_id']) ? (int)$_POST['classification_id'] : null,
-      'classification_code' => $_POST['classification_code'] ?? null,
-      'origin_id' => isset($_POST['origin_id']) ? (int)$_POST['origin_id'] : null,
-      'label_id' => ($_POST['label_id'] ?? '') === '' ? null : (int)$_POST['label_id'],
-      'room_id' => isset($_POST['room_id']) ? (int)$_POST['room_id'] : null,
-      'notes' => $_POST['notes'] ?? null,
+      'author' => ($_POST['author'] ?? '') === '' ? null : $_POST['author'],
+      'classification_id' => $strOrDefault('classification_id', $defaultClassificationId),
+      'classification_code' => ($_POST['classification_code'] ?? '') === '' ? null : $_POST['classification_code'],
+      'origin_id' => $strOrDefault('origin_id', $defaultOriginId),
+      'label_id' => $strOrDefault('label_id', $defaultLabelId),
+      'room_id' => $strOrDefault('room_id', $defaultRoomId),
+      'notes' => ($_POST['notes'] ?? '') === '' ? null : $_POST['notes'],
     ];
+
+    // Validate FK values against allowed sets (string-safe). If not valid, fall back to defaults
+    $validClassificationIds = array_map('strval', array_column($classifications, 'id'));
+    if ($payload['classification_id'] === null || !in_array((string)$payload['classification_id'], $validClassificationIds, true)) {
+      $payload['classification_id'] = $defaultClassificationId;
+    }
+    $validOriginIds = array_map('strval', array_column($origins, 'id'));
+    if ($payload['origin_id'] === null || !in_array((string)$payload['origin_id'], $validOriginIds, true)) {
+      $payload['origin_id'] = $defaultOriginId;
+    }
+    $validLabelIds = array_map('strval', array_column($labels, 'id'));
+    if ($payload['label_id'] === null || !in_array((string)$payload['label_id'], $validLabelIds, true)) {
+      $payload['label_id'] = $defaultLabelId;
+    }
+    $validRoomIds = array_map('strval', array_column($rooms, 'id'));
+    if ($payload['room_id'] === null || !in_array((string)$payload['room_id'], $validRoomIds, true)) {
+      $payload['room_id'] = $defaultRoomId;
+    }
     // Basic validation reuse
     $errors = $bookModel->validate($payload, true);
     if (empty($errors)) {
@@ -91,7 +128,6 @@ $rooms = $bookModel->getRooms();
         <div class="form-group col-md-4">
           <label>Etiqueta</label>
           <select name="label_id" class="form-control">
-            <option value="">Sin etiqueta</option>
             <?php foreach ($labels as $l): $sel=(string)$l['id']===(string)($book['label_id']??'')?'selected':''; ?>
               <option value="<?= (int)$l['id'] ?>" <?= $sel ?>><?= htmlspecialchars($l['body']) ?></option>
             <?php endforeach; ?>
