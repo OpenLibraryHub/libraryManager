@@ -10,6 +10,7 @@ require_once 'config/autoload.php';
 use App\Controllers\AuthController;
 use App\Helpers\Session;
 use App\Middleware\AuthMiddleware;
+use App\Models\Librarian;
 
 // Redirect if already logged in
 AuthMiddleware::requireGuest();
@@ -24,7 +25,17 @@ $success = Session::flash('success');
 $token = $_GET['token'] ?? '';
 
 if (empty($token)) {
-    header('Location: forgot-password.php');
+    Session::flash('error', 'No estás autorizado.');
+    header('Location: login.php');
+    exit;
+}
+
+// Validate token before rendering the form
+$librarianModel = new Librarian();
+$librarianByToken = $librarianModel->findByResetToken($token);
+if (!$librarianByToken) {
+    Session::flash('error', 'No estás autorizado.');
+    header('Location: login.php');
     exit;
 }
 

@@ -27,6 +27,44 @@ if ($export) {
   } elseif ($export === 'due_soon') {
     $days = max(1, (int)($_GET['days'] ?? 3));
     $rows = $loanModel->getDueSoonLoans($days);
+  } elseif ($export === 'books_circulation') {
+    // Books-only circulation export (no user data), with summary rows
+    $raw = $loanModel->getLoansBooksOnly();
+    $borrowedCount = is_array($raw) ? count($raw) : 0;
+    $returnedCount = 0;
+    if (!empty($raw)) {
+      foreach ($raw as $r) {
+        if (isset($r['returned']) && (int)$r['returned'] === 1) { $returnedCount++; }
+      }
+    }
+    $pendingCount = max(0, $borrowedCount - $returnedCount);
+
+    // Summary section (human-readable, Excel-friendly)
+    fputcsv($out, ['Reporte de circulación (solo libros)']);
+    fputcsv($out, ['Generado', date('Y-m-d H:i:s')]);
+    fputcsv($out, ['Préstamos totales', $borrowedCount]);
+    fputcsv($out, ['Devueltos', $returnedCount]);
+    fputcsv($out, ['Pendientes por devolver', $pendingCount]);
+    fputcsv($out, []); // Blank line
+
+    // Detail section header
+    fputcsv($out, ['isbn', 'title', 'author', 'loaned_at', 'due_at', 'returned', 'returned_at']);
+    // Detail rows (books only)
+    if (!empty($raw)) {
+      foreach ($raw as $r) {
+        fputcsv($out, [
+          $r['isbn'] ?? '',
+          $r['title'] ?? '',
+          $r['author'] ?? '',
+          $r['loaned_at'] ?? '',
+          $r['due_at'] ?? '',
+          (isset($r['returned']) && (int)$r['returned'] === 1) ? 'SI' : 'NO',
+          $r['returned_at'] ?? ''
+        ]);
+      }
+    }
+    fclose($out);
+    exit;
   } elseif ($export === 'users') {
     $userModel = new User();
     $rows = $userModel->all();
@@ -67,6 +105,7 @@ $bookStats = $bookModel->getStatistics();
       <?php endif; ?>
       <a href="reports.php?export=overdue" class="btn btn-warning ml-2">Exportar vencidos (CSV)</a>
       <a href="reports.php?export=due_soon&days=3" class="btn btn-outline-warning ml-2">Exportar por vencer (3d)</a>
+      <a href="reports.php?export=books_circulation" class="btn btn-outline-info ml-2">Reporte</a>
       <?php if (\App\Middleware\AuthMiddleware::hasRole('admin')): ?>
         <a href="reports.php?export=users" class="btn btn-outline-primary ml-2">Exportar usuarios (CSV)</a>
         <a href="reports.php?export=books" class="btn btn-outline-secondary ml-2">Exportar libros (CSV)</a>

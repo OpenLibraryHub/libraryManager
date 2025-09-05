@@ -229,6 +229,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </form>
 
             <hr>
+            <!-- Acceso de usuarios deshabilitado
             <h6 class="text-muted">Acceso de usuarios</h6>
             <form method="POST" action="user_login.php" id="patronLogin">
               <?= Session::csrfField() ?>
@@ -242,6 +243,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
               </div>
               <button type="submit" class="btn btn-outline-primary btn-login">Entrar</button>
             </form>
+            -->
+            <div class="text-center">
+              <a href="catalog.php" class="btn btn-outline-primary btn-login">Ver catálogo</a>
+            </div>
             
             <div class="text-center mt-3">
                 <a href="forgot-password.php" class="text-muted" style="text-decoration: none; font-size: 14px;">

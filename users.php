@@ -113,7 +113,7 @@ foreach ($activeLoans as $l) {
       <input type="hidden" name="action" value="create" />
       <div class="form-row">
         <div class="form-group col-md-3">
-          <label>Cédula*</label>
+          <label>Cédula (requerido)</label>
           <input type="number" name="id_number" min="1" inputmode="numeric" pattern="[0-9]*" class="form-control <?= isset($createErrors['id_number']) ? 'is-invalid' : '' ?>" value="<?= htmlspecialchars($_POST['id_number'] ?? '') ?>" required />
           <?php if (isset($createErrors['id_number'])): ?><div class="invalid-feedback"><?= htmlspecialchars($createErrors['id_number'][0]) ?></div><?php endif; ?>
         </div>
@@ -123,12 +123,12 @@ foreach ($activeLoans as $l) {
           <?php if (isset($createErrors['user_key'])): ?><div class="invalid-feedback"><?= htmlspecialchars($createErrors['user_key'][0]) ?></div><?php endif; ?>
         </div>
         <div class="form-group col-md-3">
-          <label>Nombre*</label>
+          <label>Nombre (requerido)</label>
           <input name="first_name" class="form-control <?= isset($createErrors['first_name']) ? 'is-invalid' : '' ?>" value="<?= htmlspecialchars($_POST['first_name'] ?? '') ?>" required />
           <?php if (isset($createErrors['first_name'])): ?><div class="invalid-feedback"><?= htmlspecialchars($createErrors['first_name'][0]) ?></div><?php endif; ?>
         </div>
         <div class="form-group col-md-3">
-          <label>Apellido*</label>
+          <label>Apellido (requerido)</label>
           <input name="last_name" class="form-control <?= isset($createErrors['last_name']) ? 'is-invalid' : '' ?>" value="<?= htmlspecialchars($_POST['last_name'] ?? '') ?>" required />
           <?php if (isset($createErrors['last_name'])): ?><div class="invalid-feedback"><?= htmlspecialchars($createErrors['last_name'][0]) ?></div><?php endif; ?>
         </div>

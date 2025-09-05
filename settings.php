@@ -12,6 +12,7 @@ $auth = new AuthController();
 $message = '';
 $success = false;
 $tab = $_GET['tab'] ?? 'profile';
+$errors = [];
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   if (!Session::verifyCsrfToken($_POST['csrf_token'] ?? '')) {
@@ -21,11 +22,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       $res = $auth->updateProfile($_POST);
       $success = $res['success'];
       $message = $res['message'];
+      $errors = $res['errors'] ?? [];
       $tab = 'profile';
     } elseif (($_POST['action'] ?? '') === 'change_password') {
       $res = $auth->changePassword($_POST);
       $success = $res['success'];
       $message = $res['message'];
+      $errors = $res['errors'] ?? [];
       $tab = 'password';
     }
   }
@@ -69,15 +72,24 @@ $currentUser = AuthMiddleware::user();
         <input type="hidden" name="action" value="change_password" />
         <div class="form-group">
           <label>Contraseña actual</label>
-          <input type="password" class="form-control" name="current_password" required />
+          <input type="password" class="form-control<?= isset($errors['current_password']) ? ' is-invalid' : '' ?>" name="current_password" required autocomplete="current-password" />
+          <?php if (isset($errors['current_password'])): ?>
+            <div class="invalid-feedback"><?= htmlspecialchars($errors['current_password'][0]) ?></div>
+          <?php endif; ?>
         </div>
         <div class="form-group">
           <label>Nueva contraseña</label>
-          <input type="password" class="form-control" name="new_password" minlength="8" required />
+          <input type="password" class="form-control<?= isset($errors['new_password']) ? ' is-invalid' : '' ?>" name="new_password" minlength="8" required autocomplete="new-password" />
+          <?php if (isset($errors['new_password'])): ?>
+            <div class="invalid-feedback"><?= htmlspecialchars($errors['new_password'][0]) ?></div>
+          <?php endif; ?>
         </div>
         <div class="form-group">
           <label>Confirmar nueva contraseña</label>
-          <input type="password" class="form-control" name="new_password_confirmation" minlength="8" required />
+          <input type="password" class="form-control<?= isset($errors['new_password_confirmation']) ? ' is-invalid' : '' ?>" name="new_password_confirmation" minlength="8" required autocomplete="new-password" />
+          <?php if (isset($errors['new_password_confirmation'])): ?>
+            <div class="invalid-feedback"><?= htmlspecialchars($errors['new_password_confirmation'][0]) ?></div>
+          <?php endif; ?>
         </div>
         <button class="btn btn-primary" type="submit">Actualizar contraseña</button>
       </form>
@@ -92,13 +104,19 @@ $currentUser = AuthMiddleware::user();
           <div class="col-md-6">
             <div class="form-group">
               <label>Nombre</label>
-              <input name="first_name" class="form-control" value="<?= htmlspecialchars($currentUser['first_name'] ?? Session::get('user_first_name') ?? '') ?>" required />
+              <input name="first_name" class="form-control<?= isset($errors['first_name']) ? ' is-invalid' : '' ?>" value="<?= htmlspecialchars($currentUser['first_name'] ?? Session::get('user_first_name') ?? '') ?>" required />
+              <?php if (isset($errors['first_name'])): ?>
+                <div class="invalid-feedback"><?= htmlspecialchars($errors['first_name'][0]) ?></div>
+              <?php endif; ?>
             </div>
           </div>
           <div class="col-md-6">
             <div class="form-group">
               <label>Segundo nombre</label>
-              <input name="middle_name" class="form-control" value="<?= htmlspecialchars($currentUser['middle_name'] ?? Session::get('user_middle_name') ?? '') ?>" />
+              <input name="middle_name" class="form-control<?= isset($errors['middle_name']) ? ' is-invalid' : '' ?>" value="<?= htmlspecialchars($currentUser['middle_name'] ?? Session::get('user_middle_name') ?? '') ?>" />
+              <?php if (isset($errors['middle_name'])): ?>
+                <div class="invalid-feedback"><?= htmlspecialchars($errors['middle_name'][0]) ?></div>
+              <?php endif; ?>
             </div>
           </div>
         </div>
@@ -106,13 +124,19 @@ $currentUser = AuthMiddleware::user();
           <div class="col-md-6">
             <div class="form-group">
               <label>Apellido paterno</label>
-              <input name="paternal_last_name" class="form-control" value="<?= htmlspecialchars($currentUser['paternal_last_name'] ?? Session::get('user_paternal_last_name') ?? '') ?>" required />
+              <input name="paternal_last_name" class="form-control<?= isset($errors['paternal_last_name']) ? ' is-invalid' : '' ?>" value="<?= htmlspecialchars($currentUser['paternal_last_name'] ?? Session::get('user_paternal_last_name') ?? '') ?>" required />
+              <?php if (isset($errors['paternal_last_name'])): ?>
+                <div class="invalid-feedback"><?= htmlspecialchars($errors['paternal_last_name'][0]) ?></div>
+              <?php endif; ?>
             </div>
           </div>
           <div class="col-md-6">
             <div class="form-group">
               <label>Apellido materno</label>
-              <input name="maternal_last_name" class="form-control" value="<?= htmlspecialchars($currentUser['maternal_last_name'] ?? Session::get('user_maternal_last_name') ?? '') ?>" />
+              <input name="maternal_last_name" class="form-control<?= isset($errors['maternal_last_name']) ? ' is-invalid' : '' ?>" value="<?= htmlspecialchars($currentUser['maternal_last_name'] ?? Session::get('user_maternal_last_name') ?? '') ?>" />
+              <?php if (isset($errors['maternal_last_name'])): ?>
+                <div class="invalid-feedback"><?= htmlspecialchars($errors['maternal_last_name'][0]) ?></div>
+              <?php endif; ?>
             </div>
           </div>
         </div>
@@ -120,7 +144,10 @@ $currentUser = AuthMiddleware::user();
           <div class="col-md-6">
             <div class="form-group">
               <label>Correo</label>
-              <input type="email" name="email" class="form-control" value="<?= htmlspecialchars($currentUser['email'] ?? Session::get('user_email') ?? '') ?>" required />
+              <input type="email" name="email" class="form-control<?= isset($errors['email']) ? ' is-invalid' : '' ?>" value="<?= htmlspecialchars($currentUser['email'] ?? Session::get('user_email') ?? '') ?>" required />
+              <?php if (isset($errors['email'])): ?>
+                <div class="invalid-feedback"><?= htmlspecialchars($errors['email'][0]) ?></div>
+              <?php endif; ?>
             </div>
           </div>
         </div>
@@ -130,13 +157,19 @@ $currentUser = AuthMiddleware::user();
           <div class="col-md-6">
             <div class="form-group">
               <label>Nueva contraseña (opcional)</label>
-              <input type="password" name="password" class="form-control" minlength="8" />
+              <input type="password" name="password" class="form-control<?= isset($errors['password']) ? ' is-invalid' : '' ?>" minlength="8" autocomplete="new-password" />
+              <?php if (isset($errors['password'])): ?>
+                <div class="invalid-feedback"><?= htmlspecialchars($errors['password'][0]) ?></div>
+              <?php endif; ?>
             </div>
           </div>
           <div class="col-md-6">
             <div class="form-group">
               <label>Contraseña actual (requerida si cambia la contraseña)</label>
-              <input type="password" name="current_password" class="form-control" />
+              <input type="password" name="current_password" class="form-control<?= isset($errors['current_password']) ? ' is-invalid' : '' ?>" autocomplete="current-password" />
+              <?php if (isset($errors['current_password'])): ?>
+                <div class="invalid-feedback"><?= htmlspecialchars($errors['current_password'][0]) ?></div>
+              <?php endif; ?>
             </div>
           </div>
         </div>

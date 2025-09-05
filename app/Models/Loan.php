@@ -75,6 +75,26 @@ class Loan extends Model {
         
         return $this->db->query($sql) ?: [];
     }
+
+    /**
+     * Get all loans with only book-related fields (no user data)
+     */
+    public function getLoansBooksOnly(): array {
+        $sql = "SELECT 
+                p.loan_id AS loan_id,
+                p.loaned_at AS loaned_at,
+                p.due_at AS due_at,
+                p.returned AS returned,
+                p.returned_at AS returned_at,
+                l.title AS title,
+                l.author AS author,
+                l.isbn AS isbn
+                FROM {$this->table} p
+                INNER JOIN books l ON p.book_id = l.id
+                ORDER BY p.loaned_at DESC";
+        
+        return $this->db->query($sql) ?: [];
+    }
     
     /**
      * Search loans
@@ -232,7 +252,8 @@ class Loan extends Model {
         }
         
         // Check if deadline hasn't passed
-        if (strtotime($loan['due_at']) < time()) {
+        $oldDueAt = $loan['due_at'] ?? null;
+        if (!$oldDueAt || strtotime($oldDueAt) < time()) {
             return false;
         }
         
@@ -242,7 +263,25 @@ class Loan extends Model {
         
         $result = $this->db->query($sql, 'ii', [$additionalDays, $loanId]);
         
-        return $result !== false && $this->db->affectedRows() > 0;
+        if ($result === false) {
+            return false;
+        }
+        
+        if ($this->db->affectedRows() > 0) {
+            return true;
+        }
+        
+        // Fallback: Verify if due_at actually increased even if affectedRows reported 0
+        $updated = $this->find($loanId);
+        if (!$updated) {
+            return false;
+        }
+        $newDueAt = $updated['due_at'] ?? null;
+        if ($newDueAt && strtotime($newDueAt) > strtotime($oldDueAt)) {
+            return true;
+        }
+        
+        return false;
     }
     
     /**

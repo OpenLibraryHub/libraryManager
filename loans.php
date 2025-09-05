@@ -97,9 +97,10 @@ $activeLoans = $q !== '' ? $loanModel->searchLoans($q, $field, $activeOnly) : ($
   <div class="card mb-4">
     <div class="card-body">
       <h5 class="card-title">Crear préstamo</h5>
-      <form method="post">
+      <form method="post" id="createLoanForm">
         <?= Session::csrfField() ?>
         <input type="hidden" name="action" value="create" />
+        <input type="hidden" name="confirm" id="confirmLoanConfirmed" value="0" />
         <div class="form-row">
           <div class="form-group col-md-3">
             <label>Libro (ID o ISBN)</label>
@@ -122,6 +123,30 @@ $activeLoans = $q !== '' ? $loanModel->searchLoans($q, $field, $activeOnly) : ($
         </div>
         <button class="btn btn-primary" type="submit">Prestar</button>
       </form>
+    </div>
+  </div>
+
+  <div class="modal fade" id="confirmLoanModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Confirmar préstamo</h5>
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+        <div class="modal-body">
+          <p class="mb-1 text-muted small">¿Los datos son correctos?</p>
+          <p class="mb-1"><strong>Libro:</strong> <span id="confirmLoanBook"></span></p>
+          <p class="mb-1"><strong>Usuario:</strong> <span id="confirmLoanUser"></span></p>
+          <p class="mb-1"><strong>Días:</strong> <span id="confirmLoanDays"></span></p>
+          <p class="mb-0"><strong>Observación:</strong> <span id="confirmLoanObs"></span></p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-dismiss="modal">No</button>
+          <button type="button" class="btn btn-primary" id="confirmLoanYes">Sí, confirmar</button>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -195,12 +220,12 @@ $activeLoans = $q !== '' ? $loanModel->searchLoans($q, $field, $activeOnly) : ($
                   <?php endif; ?>
                 </td>
                 <td>
-                  <form method="post" class="form-inline">
+                  <form method="post" class="form-inline extend-form" data-loan-title="<?= htmlspecialchars($l['Titulo'] ?? $l['title'] ?? '', ENT_QUOTES, 'UTF-8') ?>">
                     <?= Session::csrfField() ?>
                     <input type="hidden" name="action" value="extend" />
                     <input type="hidden" name="loan_id" value="<?= (int)($l['PrestamosID'] ?? $l['loan_id'] ?? 0) ?>" />
                     <div class="input-group input-group-sm">
-                      <input type="number" class="form-control" name="days" value="5" min="1" style="max-width:90px">
+                      <input type="number" class="form-control" name="days" value="5" min="1" style="min-width:110px">
                       <div class="input-group-append">
                         <button class="btn btn-outline-secondary" type="submit">Extender</button>
                       </div>
@@ -218,7 +243,29 @@ $activeLoans = $q !== '' ? $loanModel->searchLoans($q, $field, $activeOnly) : ($
       </div>
     </div>
   </div>
+
+  <div class="modal fade" id="confirmExtendModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Confirmar extensión</h5>
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+        <div class="modal-body">
+          <p>¿Seguro que quieres extender el préstamo del libro <strong><span id="extendTitle"></span></strong> por <strong><span id="extendDays"></span></strong> días?</p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-dismiss="modal">No</button>
+          <button type="button" class="btn btn-primary" id="confirmExtendYes">Sí, extender</button>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>
+<script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@4.5.2/dist/js/bootstrap.bundle.min.js"></script>
 <script>
 async function fetchJSON(url) {
   const res = await fetch(url, {credentials: 'same-origin'});
@@ -250,6 +297,90 @@ document.addEventListener('input', async (e) => {
       opt.value = u.user_key || String(u.id_number);
       opt.label = `${u.first_name} ${u.last_name} (${u.id_number})`;
       dl.appendChild(opt);
+    });
+  }
+});
+document.addEventListener('DOMContentLoaded', function(){
+  var form = document.getElementById('createLoanForm');
+  var confirmedInput = document.getElementById('confirmLoanConfirmed');
+  var modalEl = document.getElementById('confirmLoanModal');
+  var bookSpan = document.getElementById('confirmLoanBook');
+  var userSpan = document.getElementById('confirmLoanUser');
+  var daysSpan = document.getElementById('confirmLoanDays');
+  var obsSpan = document.getElementById('confirmLoanObs');
+  var yesBtn = document.getElementById('confirmLoanYes');
+
+  if (form) {
+    form.addEventListener('submit', function(e){
+      if (confirmedInput && confirmedInput.value === '1') { return; }
+      e.preventDefault();
+      var bookVal = (form.querySelector('input[name="book_id"]').value || '').trim();
+      var userVal = (form.querySelector('input[name="user_id"]').value || '').trim();
+      var daysVal = (form.querySelector('input[name="days"]').value || '').trim();
+      var obsVal = (form.querySelector('input[name="observation"]').value || '').trim();
+      if (bookSpan) bookSpan.textContent = bookVal || '';
+      if (userSpan) userSpan.textContent = userVal || '';
+      if (daysSpan) daysSpan.textContent = daysVal || '';
+      if (obsSpan) obsSpan.textContent = obsVal || '-';
+      if (window.jQuery && jQuery.fn.modal) {
+        jQuery('#confirmLoanModal').modal('show');
+      } else if (typeof bootstrap !== 'undefined') {
+        var bs = new bootstrap.Modal(modalEl);
+        bs.show();
+      } else {
+        if (confirm('¿Confirmar préstamo?')) {
+          if (confirmedInput) confirmedInput.value = '1';
+          form.submit();
+        }
+      }
+    });
+  }
+
+  if (yesBtn && form) {
+    yesBtn.addEventListener('click', function(){
+      if (confirmedInput) confirmedInput.value = '1';
+      form.submit();
+    });
+  }
+
+  // Confirmación para extender préstamo
+  var extendModal = document.getElementById('confirmExtendModal');
+  var extendTitleSpan = document.getElementById('extendTitle');
+  var extendDaysSpan = document.getElementById('extendDays');
+  var extendYesBtn = document.getElementById('confirmExtendYes');
+  var formToSubmit = null;
+
+  var extendForms = document.querySelectorAll('form.extend-form');
+  extendForms.forEach(function(f){
+    f.addEventListener('submit', function(e){
+      if (f.dataset.confirmed === '1') { return; }
+      e.preventDefault();
+      var dInput = f.querySelector('input[name="days"]');
+      var days = (dInput && dInput.value) ? dInput.value.trim() : '';
+      var title = f.getAttribute('data-loan-title') || '';
+      if (extendTitleSpan) extendTitleSpan.textContent = title;
+      if (extendDaysSpan) extendDaysSpan.textContent = days || '0';
+      formToSubmit = f;
+      if (window.jQuery && jQuery.fn.modal) {
+        jQuery('#confirmExtendModal').modal('show');
+      } else if (typeof bootstrap !== 'undefined') {
+        var bs2 = new bootstrap.Modal(extendModal);
+        bs2.show();
+      } else {
+        if (confirm('¿Seguro que quieres extender el préstamo por ' + (days || '0') + ' días?')) {
+          f.dataset.confirmed = '1';
+          f.submit();
+        }
+      }
+    });
+  });
+
+  if (extendYesBtn) {
+    extendYesBtn.addEventListener('click', function(){
+      if (formToSubmit) {
+        formToSubmit.dataset.confirmed = '1';
+        formToSubmit.submit();
+      }
     });
   }
 });

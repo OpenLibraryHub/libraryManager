@@ -9,6 +9,13 @@ use App\Models\Book;
 AuthMiddleware::require();
 Session::start();
 
+// Restrict holds page to admins only
+if (!AuthMiddleware::hasRole('admin')) {
+  Session::flash('error', 'Acceso restringido a administradores.');
+  header('Location: dashboard.php');
+  exit;
+}
+
 $holdModel = new Hold();
 $bookModel = new Book();
 

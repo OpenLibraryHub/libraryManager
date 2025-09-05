@@ -42,7 +42,7 @@ $dueSoonLoans = array_slice($loanModel->getDueSoonLoans(3), 0, 5);
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard - Sistema Biblioteca</title>
+    <title>Dashboard</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <?= Session::csrfMeta() ?>
@@ -59,6 +59,7 @@ $dueSoonLoans = array_slice($loanModel->getDueSoonLoans(3), 0, 5);
         body {
             background-color: #f7fafc;
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            overflow-x: hidden;
         }
         
         .navbar {
@@ -169,6 +170,7 @@ $dueSoonLoans = array_slice($loanModel->getDueSoonLoans(3), 0, 5);
         
         .user-menu {
             position: relative;
+            margin-right: 30px;
         }
         
         .user-menu .dropdown-menu {
@@ -240,9 +242,12 @@ $dueSoonLoans = array_slice($loanModel->getDueSoonLoans(3), 0, 5);
                     <a class="nav-link" href="reports.php">
                         <i class="fas fa-chart-bar"></i> Reportes
                     </a>
-                     <a class="nav-link" href="holds.php">
-                         <i class="fas fa-list"></i> Lista de espera
-                     </a>
+                    <!-- Aquí estaba el botón de Lista de espera (holds) -->
+                    <!--
+                    <a class="nav-link" href="holds.php">
+                        <i class="fas fa-list"></i> Lista de espera
+                    </a>
+                    -->
                      <a class="nav-link" href="due_soon.php">
                          <i class="fas fa-clock"></i> Por vencer
                      </a>
@@ -253,8 +258,7 @@ $dueSoonLoans = array_slice($loanModel->getDueSoonLoans(3), 0, 5);
             <div class="col-md-10 p-4">
                 <!-- Welcome Message -->
                 <div class="alert alert-info alert-dismissible fade show" role="alert">
-                    <i class="fas fa-info-circle"></i> Bienvenido al nuevo sistema seguro de biblioteca. 
-                    Todas las vulnerabilidades críticas han sido corregidas.
+                    <i class="fas fa-info-circle"></i> Bienvenido al sistema de biblioteca.
                     <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                 </div>
 

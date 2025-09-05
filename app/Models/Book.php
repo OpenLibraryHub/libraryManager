@@ -173,15 +173,14 @@ class Book extends Model {
     }
     
     /**
-     * Update book availability (increase)
+     * Update book availability (increase available only on return)
      */
     public function increaseAvailability($id, int $amount = 1): bool {
-        $sql = "UPDATE {$this->table} 
-                SET copies_available = copies_available + ?, 
-                    copies_total = copies_total + ?
+        $sql = "UPDATE {$this->table}
+                SET copies_available = LEAST(copies_total, copies_available + ?)
                 WHERE id = ?";
         
-        $result = $this->db->query($sql, 'iii', [$amount, $amount, $id]);
+        $result = $this->db->query($sql, 'ii', [$amount, $id]);
         return $result !== false;
     }
     
