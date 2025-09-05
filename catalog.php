@@ -10,7 +10,7 @@ $q = trim($_GET['q'] ?? '');
 $field = $_GET['field'] ?? 'all';
 $allowedFields = ['all','title','author','isbn','code'];
 if (!in_array($field, $allowedFields, true)) { $field = 'all'; }
-$onlyAvailable = isset($_GET['available']) ? (int)$_GET['available'] === 1 : 1;
+$onlyAvailable = 1;
 
 $page = (int)($_GET['page'] ?? 1);
 if ($page < 1) { $page = 1; }
@@ -76,12 +76,7 @@ function h($v) { return htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8'); }
             <option value="code" <?= $field==='code'?'selected':'' ?>>Código</option>
           </select>
         </div>
-        <div class="col-md-2">
-          <div class="form-check mt-4">
-            <input class="form-check-input" type="checkbox" value="1" id="available" name="available" <?= $onlyAvailable? 'checked':'' ?>>
-            <label class="form-check-label" for="available">Solo disponibles</label>
-          </div>
-        </div>
+        <!-- Filtro 'Solo disponibles' eliminado: el catálogo siempre muestra solo disponibles -->
         <div class="col-md-2">
           <button class="btn btn-primary btn-block" type="submit">Buscar</button>
         </div>
@@ -112,15 +107,15 @@ function h($v) { return htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8'); }
               ?>
               <tr>
                 <td>
-                  <a href="book.php?id=<?= (int)$b['id'] ?>"><?= h($b['title'] ?? '') ?></a>
+                  <a href="book.php?id=<?= (int)$b['id'] ?>"><?= ($b['title'] ?? '') === '' ? '<span class="text-danger">NO TIENE</span>' : h($b['title'] ?? '') ?></a>
                   <?php if ($archived): ?>
                     <span class="badge badge-secondary archived-badge">Archivado</span>
                   <?php endif; ?>
                 </td>
-                <td><?= h($b['author'] ?? '') ?></td>
-                <td><?= h($b['isbn'] ?? '') ?></td>
-                <td><?= h($b['classification_code'] ?? '') ?></td>
-                <td><?= h($b['room'] ?? '') ?></td>
+                <td><?= ($b['author'] ?? '') === '' ? '<span class="text-danger">NO TIENE</span>' : h($b['author'] ?? '') ?></td>
+                <td><?= ($b['isbn'] ?? '') === '' ? '<span class="text-danger">NO TIENE</span>' : h($b['isbn'] ?? '') ?></td>
+                <td><?= ($b['classification_code'] ?? '') === '' ? '<span class="text-danger">NO TIENE</span>' : h($b['classification_code'] ?? '') ?></td>
+                <td><?= ($b['room'] ?? '') === '' ? '<span class="text-danger">NO TIENE</span>' : h($b['room'] ?? '') ?></td>
                 <td>
                   <?php if ($availableCount > 0): ?>
                     <span class="text-success">Disponible (<?= (int)$availableCount ?>)</span>
@@ -145,6 +140,7 @@ function h($v) { return htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8'); }
         <ul class="pagination mb-0">
           <?php 
             $base = $_GET; 
+            unset($base['available']);
             $base['page'] = 1; 
             $firstUrl = '?' . http_build_query($base);
             $base['page'] = max(1, $page-1);

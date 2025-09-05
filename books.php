@@ -100,10 +100,10 @@ if ($q !== '') {
         <?php foreach ($books as $b): ?>
           <tr>
             <td><?= (int)$b['id'] ?></td>
-            <td><?= htmlspecialchars((string)($b['isbn'] ?? '')) ?></td>
-            <td><a href="books_detail.php?id=<?= (int)$b['id'] ?>"><?= htmlspecialchars($b['title'] ?? '') ?></a></td>
-            <td><?= htmlspecialchars($b['author'] ?? '') ?></td>
-            <td><?= htmlspecialchars($b['classification'] ?? '') ?></td>
+            <td><?= ($b['isbn'] ?? null) === null ? '<span class="text-danger">NO TIENE</span>' : htmlspecialchars((string)$b['isbn']) ?></td>
+            <td><a href="books_detail.php?id=<?= (int)$b['id'] ?>"><?= ($b['title'] ?? null) === null ? '<span class="text-danger">NO TIENE</span>' : htmlspecialchars((string)$b['title']) ?></a></td>
+            <td><?= ($b['author'] ?? null) === null ? '<span class="text-danger">NO TIENE</span>' : htmlspecialchars((string)$b['author']) ?></td>
+            <td><?= ($b['classification'] ?? null) === null ? '<span class="text-danger">NO TIENE</span>' : htmlspecialchars((string)$b['classification']) ?></td>
             <td>
               <?php if (\App\Models\Book::isArchivedRow($b)): ?>
                 <span class="badge badge-secondary">Archivado</span>
@@ -111,7 +111,7 @@ if ($q !== '') {
                 <?= (int)($b['copies_available'] ?? 0) ?> / <?= (int)($b['copies_total'] ?? 0) ?>
               <?php endif; ?>
             </td>
-            <td><?= htmlspecialchars($b['room'] ?? '') ?></td>
+            <td><?= ($b['room'] ?? null) === null ? '<span class="text-danger">NO TIENE</span>' : htmlspecialchars((string)$b['room']) ?></td>
             <td class="text-nowrap">
               <a class="btn btn-sm btn-outline-primary" href="books_edit.php?id=<?= (int)$b['id'] ?>" onclick="return confirm('¿Editar este libro?')">Editar</a>
               <a class="btn btn-sm btn-outline-danger" href="books_delete.php?id=<?= (int)$b['id'] ?>" onclick="return confirm('¿Eliminar o archivar este libro?')">Eliminar</a>

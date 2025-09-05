@@ -42,18 +42,18 @@ $queue = $holdModel->getQueueForBook((int)$book['id']);
   <div class="card mb-3"><div class="card-body">
     <div class="row">
       <div class="col-md-6">
-        <h5><?= htmlspecialchars($book['title'] ?? '') ?></h5>
-        <p class="mb-1"><strong>Autor:</strong> <?= htmlspecialchars($book['author'] ?? '') ?></p>
-        <p class="mb-1"><strong>ISBN:</strong> <?= htmlspecialchars($book['isbn'] ?? '') ?></p>
-        <p class="mb-1"><strong>Código de clasificación:</strong> <?= htmlspecialchars($book['classification_code'] ?? '') ?></p>
-        <p class="mb-1"><strong>Clasificación:</strong> <?= htmlspecialchars($book['classification_desc'] ?? '') ?></p>
-        <p class="mb-1"><strong>Origen:</strong> <?= htmlspecialchars($book['origin_desc'] ?? '') ?></p>
-        <p class="mb-1"><strong>Etiqueta:</strong> <?= htmlspecialchars($book['label_desc'] ?? '') ?></p>
-        <p class="mb-1"><strong>Sala:</strong> <?= htmlspecialchars($book['room_desc'] ?? '') ?></p>
+        <h5><?= ($book['title'] ?? null) === null ? '<span class="text-danger">NO TIENE</span>' : htmlspecialchars((string)$book['title']) ?></h5>
+        <p class="mb-1"><strong>Autor:</strong> <?= ($book['author'] ?? null) === null ? '<span class="text-danger">NO TIENE</span>' : htmlspecialchars((string)$book['author']) ?></p>
+        <p class="mb-1"><strong>ISBN:</strong> <?= ($book['isbn'] ?? null) === null ? '<span class="text-danger">NO TIENE</span>' : htmlspecialchars((string)$book['isbn']) ?></p>
+        <p class="mb-1"><strong>Código de clasificación:</strong> <?= ($book['classification_code'] ?? null) === null ? '<span class="text-danger">NO TIENE</span>' : htmlspecialchars((string)$book['classification_code']) ?></p>
+        <p class="mb-1"><strong>Clasificación:</strong> <?= ($book['classification_desc'] ?? null) === null ? '<span class="text-danger">NO TIENE</span>' : htmlspecialchars((string)$book['classification_desc']) ?></p>
+        <p class="mb-1"><strong>Origen:</strong> <?= ($book['origin_desc'] ?? null) === null ? '<span class="text-danger">NO TIENE</span>' : htmlspecialchars((string)$book['origin_desc']) ?></p>
+        <p class="mb-1"><strong>Etiqueta:</strong> <?= ($book['label_desc'] ?? null) === null ? '<span class="text-danger">NO TIENE</span>' : htmlspecialchars((string)$book['label_desc']) ?></p>
+        <p class="mb-1"><strong>Sala:</strong> <?= ($book['room_desc'] ?? null) === null ? '<span class="text-danger">NO TIENE</span>' : htmlspecialchars((string)$book['room_desc']) ?></p>
       </div>
       <div class="col-md-6">
         <p class="mb-1"><strong>Disponibles:</strong> <?= (int)($book['copies_available'] ?? 0) ?> / <?= (int)($book['copies_total'] ?? 0) ?></p>
-        <p class="mb-1"><strong>Observación:</strong> <?= htmlspecialchars($book['notes'] ?? '') ?></p>
+        <p class="mb-1"><strong>Observación:</strong> <?= ($book['notes'] ?? null) === null ? '<span class="text-danger">NO TIENE</span>' : htmlspecialchars((string)$book['notes']) ?></p>
         <?php if ((int)($book['copies_available'] ?? 0) === 0): ?>
           <hr>
           <form method="post" action="holds.php">
