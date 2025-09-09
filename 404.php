@@ -1,6 +1,10 @@
 <?php
 http_response_code(404);
-?><!DOCTYPE html>
+$scriptName = $_SERVER['SCRIPT_NAME'] ?? '';
+$dir = rtrim(str_replace('\\', '/', dirname($scriptName)), '/');
+$basePath = ($dir === '/' ? '' : $dir);
+?>
+<!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
@@ -23,8 +27,8 @@ http_response_code(404);
       <h2 class="mb-3">Ups, creo que no encontramos lo que estás buscando.</h2>
       <p class="text-secondary mb-4">La página solicitada no existe o fue movida.</p>
       <div class="d-flex justify-content-center">
-        <a href="/library/login.php" class="btn btn-primary mr-2">Ir al inicio de sesión</a>
-        <a href="/library/catalog.php" class="btn btn-outline-secondary">Ver catálogo</a>
+        <a href="<?= htmlspecialchars($basePath) ?>/login.php" class="btn btn-primary mr-2">Ir al inicio de sesión</a>
+        <a href="<?= htmlspecialchars($basePath) ?>/catalog.php" class="btn btn-outline-secondary">Ver catálogo</a>
       </div>
     </div>
   </div>

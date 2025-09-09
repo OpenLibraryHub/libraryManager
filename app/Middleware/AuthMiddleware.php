@@ -11,6 +11,12 @@ use App\Helpers\Session;
 
 class AuthMiddleware {
     
+    private static function basePath(): string {
+        $scriptName = $_SERVER['SCRIPT_NAME'] ?? '';
+        $dir = rtrim(str_replace('\\', '/', dirname($scriptName)), '/');
+        return $dir === '/' ? '' : $dir;
+    }
+    
     /**
      * Check if user is authenticated
      * 
@@ -60,7 +66,7 @@ class AuthMiddleware {
         
         if (Session::isLoggedIn()) {
             if ($redirect) {
-                header('Location: /library/dashboard.php');
+                header('Location: ' . (self::basePath() . '/dashboard.php'));
                 exit;
             }
             return false;
@@ -165,7 +171,7 @@ class AuthMiddleware {
         $currentUrl = $_SERVER['REQUEST_URI'];
         Session::set('intended_url', $currentUrl);
         
-        header('Location: /library/login.php');
+        header('Location: ' . (self::basePath() . '/login.php'));
         exit;
     }
     

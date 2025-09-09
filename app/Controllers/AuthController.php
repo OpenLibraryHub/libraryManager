@@ -16,6 +16,12 @@ use App\Middleware\AuthMiddleware;
 class AuthController {
     private Librarian $librarianModel;
     
+    private function basePath(): string {
+        $scriptName = $_SERVER['SCRIPT_NAME'] ?? '';
+        $dir = rtrim(str_replace('\\', '/', dirname($scriptName)), '/');
+        return $dir === '/' ? '' : $dir;
+    }
+    
     public function __construct() {
         $this->librarianModel = new Librarian();
     }
@@ -63,7 +69,7 @@ class AuthController {
             
             $response['success'] = true;
             $response['message'] = 'Inicio de sesión exitoso.';
-            $response['redirect'] = Session::get('intended_url', '/library/dashboard.php');
+            $response['redirect'] = Session::get('intended_url', $this->basePath() . '/dashboard.php');
             Session::remove('intended_url');
         } else {
             // Login failed
@@ -114,7 +120,7 @@ class AuthController {
 
         $response['success'] = true;
         $response['message'] = 'Inicio de sesión exitoso.';
-        $response['redirect'] = '/library/account.php';
+        $response['redirect'] = $this->basePath() . '/account.php';
         return $response;
     }
     
@@ -127,7 +133,7 @@ class AuthController {
         }
         
         Session::logout();
-        header('Location: /library/login.php');
+        header('Location: ' . ($this->basePath() . '/login.php'));
         exit;
     }
     

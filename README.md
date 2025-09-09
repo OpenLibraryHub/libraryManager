@@ -60,7 +60,7 @@ DB_USERNAME=root
 DB_PASSWORD=
 
 APP_NAME="Library Management System"
-APP_URL=http://localhost/library
+APP_URL=http://localhost
 APP_ENV=production
 APP_DEBUG=false
 APP_KEY=change_me_32_chars_hex
@@ -84,7 +84,7 @@ Notes:
 1. Create MySQL database and schema.
 2. Create `.env` (see above).
 3. Set folder permissions: `logs/` (and `public/uploads` if used) writable by web server.
-4. Configure Apache (Debian) VirtualHost (see deploy section) or access via existing `/library` alias.
+4. Configure Apache (Debian) VirtualHost (see deploy section) or place in any subdirectory.
 5. Visit `APP_URL` and log in at `login.php`.
    - Seed a librarian in `librarians` table manually (email must match `ADMIN_EMAILS` for admin actions).
 
@@ -147,7 +147,7 @@ VirtualHost (example):
 <VirtualHost *:80>
     ServerName your-domain
     DocumentRoot /var/www/html
-    <Directory /var/www/html/library>
+    <Directory /var/www/html/your-folder>
         AllowOverride All
         Require all granted
     </Directory>

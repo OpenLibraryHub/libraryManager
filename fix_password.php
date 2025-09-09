@@ -36,7 +36,8 @@ try {
         
         if ($result) {
             echo "✅ Reset token stored successfully!\n";
-            echo "Reset link: http://localhost/library/reset-password.php?token=" . $token . "\n";
+            $base = $_ENV['APP_URL'] ?? 'http://localhost';
+            echo "Reset link: " . rtrim($base, '/') . "/reset-password.php?token=" . $token . "\n";
         } else {
             echo "❌ Failed to store reset token\n";
         }
