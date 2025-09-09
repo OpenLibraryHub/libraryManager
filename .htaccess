@@ -1,0 +1,43 @@
+Options -Indexes -Multiviews
+
+DirectoryIndex index.php
+
+ErrorDocument 404 /library/404.php
+ErrorDocument 403 /library/404.php
+
+# Ensure PHP gets the original request URI for routing if needed
+RewriteEngine On
+RewriteBase /library/
+
+# Serve homepage normally
+RewriteRule ^$ index.php [L]
+
+# Hard deny .env and variants; map to 404 via ErrorDocument 403
+<FilesMatch "^\.env(\..*)?$">
+Require all denied
+</FilesMatch>
+
+# Explicitly block .env anywhere
+RewriteRule (^|/)\.env($|/) /library/404.php [L]
+
+# Block dotfiles like .env, .git, .htaccess by sending 404
+RewriteRule (^|/)\..+ /library/404.php [L]
+
+# Allow only existing PHP files
+RewriteCond %{REQUEST_FILENAME} -f
+RewriteRule \.php$ - [L]
+
+# If the request is a directory (not root), show 404
+RewriteCond %{REQUEST_FILENAME} -d
+RewriteCond %{REQUEST_URI} !^/library/?$ [NC]
+RewriteRule ^ /library/404.php [L]
+
+# If the file exists but is not PHP, show 404
+RewriteCond %{REQUEST_FILENAME} -f
+RewriteCond %{REQUEST_URI} !\.php$ [NC]
+RewriteRule ^ /library/404.php [L]
+
+# Otherwise, let 404 handle non-existing paths directly
+RewriteRule ^.*$ /library/404.php [L]
+
+

@@ -154,9 +154,46 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             color: #999;
             font-size: 14px;
         }
+        /* Animated background (matching landing) */
+        :root {
+            --primary: #5b8def;
+        }
+        .bg-animated {
+            position: fixed;
+            inset: 0;
+            background: linear-gradient(120deg, #e0f2fe, #eef2ff, #f0fdf4);
+            background-size: 180% 180%;
+            animation: gradientShift 12s ease infinite;
+            z-index: -2;
+        }
+        @keyframes gradientShift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        .shape {
+            position: fixed;
+            border-radius: 9999px;
+            filter: blur(40px);
+            opacity: .35;
+            z-index: -1;
+            animation: float 18s ease-in-out infinite;
+        }
+        .shape.s1 { width: 320px; height: 320px; background: #93c5fd; top: -60px; left: -60px; }
+        .shape.s2 { width: 240px; height: 240px; background: #a7f3d0; bottom: 12vh; right: 12vw; animation-delay: -6s; }
+        .shape.s3 { width: 200px; height: 200px; background: #c7d2fe; top: 22vh; right: -60px; animation-delay: -12s; }
+        @keyframes float {
+            0%, 100% { transform: translateY(0px) translateX(0px); }
+            50% { transform: translateY(-18px) translateX(8px); }
+        }
+        body { overflow-x: hidden; }
     </style>
 </head>
 <body>
+    <div class="bg-animated"></div>
+    <div class="shape s1"></div>
+    <div class="shape s2"></div>
+    <div class="shape s3"></div>
     <div class="login-container">
         <div class="login-header">
             <h1>SISTEMA BIBLIOTECA</h1>
@@ -248,11 +285,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
               <a href="catalog.php" class="btn btn-outline-primary btn-login">Ver catálogo</a>
             </div>
             
+            <!--
             <div class="text-center mt-3">
                 <a href="forgot-password.php" class="text-muted" style="text-decoration: none; font-size: 14px;">
                     ¿Olvidaste tu contraseña?
                 </a>
             </div>
+            -->
             
             <div class="footer-text">
                 <p>Sistema seguro con protección CSRF</p>
