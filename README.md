@@ -167,16 +167,5 @@ sudo systemctl restart apache2
 - CSV exports (restricted where applicable)
 - Password reset (token flow); check `emails.log` if you wire `Notifier`
 
-## 🧱 Known Notes / TODO
-- Patron login handler: create a thin `user_login.php` that calls `AuthController::patronLogin($_POST)` and redirects accordingly.
-- SMTP: replace `Notifier::sendEmail` logging with real mailer (PHPMailer/SMTP) and call it from password reset.
-- Provide SQL schema dump under `database/` for easy provisioning.
-
-## 📚 Related Docs
-- `MIGRATION_GUIDE.md` – migration steps and mapping
-- `SECURITY_IMPROVEMENTS.md` – security refactor overview
-
-## 📛 License
-If not specified, this code is private to your organization.
 
 
