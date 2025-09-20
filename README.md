@@ -129,14 +129,6 @@ Notes:
 - Users (admin): `reports.php?export=users`
 - Books (admin): `reports.php?export=books`
 
-## 🔄 Git Workflow
-```bash
-git checkout -b new_code
-git add .
-git commit -m "feat: initial library system with MVC, security, and features"
-git push -u origin new_code
-```
-
 ## 🚢 Deploy (Apache2 on Debian)
 ```bash
 sudo apt update && sudo apt install -y apache2 php php-mysqli
