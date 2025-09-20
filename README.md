@@ -149,15 +149,3 @@ Restart Apache:
 ```bash
 sudo systemctl restart apache2
 ```
-
-## 🧪 Test Checklist
-- Login (success/failure), CSRF rejection
-- Create/edit/archive books; ISBN duplicate modal
-- Create/extend loans; overdue and due soon lists
-- Returns; auto-assign next hold
-- Create/search/sort/paginate users; sanction flow
-- CSV exports (restricted where applicable)
-- Password reset (token flow); check `emails.log` if you wire `Notifier`
-
-
-
